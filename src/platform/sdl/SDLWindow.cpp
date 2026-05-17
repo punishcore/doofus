@@ -16,7 +16,7 @@ SDLWindow::~SDLWindow()
 
 bool SDLWindow::init(int width, int height, const char* title)
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    if (!SDL_Init(SDL_INIT_VIDEO))
     {
         std::cout << "SDL init failed\n";
         return false;
@@ -53,9 +53,6 @@ bool SDLWindow::init(int width, int height, const char* title)
 
     SDL_GL_MakeCurrent(window, glContext);
 
-    SDL_SetWindowRelativeMouseMode(window, true);
-    SDL_HideCursor();
-
     return true;
 }
 
@@ -67,50 +64,6 @@ void SDLWindow::pollEvents()
     {
         if (e.type == SDL_EVENT_QUIT)
             closed = true;
-
-        if (e.type == SDL_EVENT_KEY_DOWN)
-        {
-            if (e.key.key == SDLK_ESCAPE)
-            {
-                bool relative =
-                    SDL_GetWindowRelativeMouseMode(window);
-
-                if (relative)
-                {
-                    SDL_SetWindowRelativeMouseMode(
-                        window,
-                        false
-                    );
-
-                    SDL_ShowCursor();
-                }
-                else
-                {
-                    SDL_SetWindowRelativeMouseMode(
-                        window,
-                        true
-                    );
-
-                    SDL_HideCursor();
-                }
-            }
-        }
-
-        if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
-        {
-            bool relative =
-                SDL_GetWindowRelativeMouseMode(window);
-
-            if (!relative)
-            {
-                SDL_SetWindowRelativeMouseMode(
-                    window,
-                    true
-                );
-
-                SDL_HideCursor();
-            }
-        }
     }
 }
 
@@ -122,4 +75,9 @@ void SDLWindow::swapBuffers()
 bool SDLWindow::shouldClose()
 {
     return closed;
+}
+
+SDL_Window* SDLWindow::getWindow()
+{
+    return window;
 }

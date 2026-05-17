@@ -1,534 +1,301 @@
-# doofus Engine Documentation
+# Documentation
 
 ## Overview
 
-**doofus** is a lightweight game engine/framework built with:
+This project currently includes a basic real-time 3D application setup using:
 
-* C++
-* SDL3
-* OpenGL 4.6
-* GLAD
-
-The project is designed as a foundation for:
-
-* 2D/3D rendering
-* input handling
-* camera systems
-* platform abstraction
-* ECS architecture
-* future game engine expansion
+* SDL3 window system
+* OpenGL rendering
+* GLAD OpenGL loader
+* CMake build system
+* First-person camera movement
+* Basic physics system
+* Platform collision
+* Mouse look controls
+* Shader-based rendering
+* Grid floor rendering
+* Modular folder structure
 
 ---
 
-# Features
+# Features Implemented
 
-## Current Features
+## Window System
 
-### Window System
+The application uses SDL3 to:
 
-* SDL3 Window
-* OpenGL Context
-* Cross-platform abstraction
-* Window Factory Pattern
+* Create an OpenGL window
+* Handle input events
+* Manage mouse capture
+* Swap rendering buffers
 
-### Rendering
+### Implemented
 
-* OpenGL 4.6 Core Profile
-* Triangle rendering
-* Basic shader system
-* VAO & VBO setup
+* OpenGL context creation
+* Window initialization
+* Event polling
+* Window close handling
 
-### Input System
+---
 
-* Keyboard input
-* Mouse movement
-* WASD movement
-* ESC cursor toggle
+## OpenGL Rendering
 
-### Camera System
+The renderer currently supports:
 
-* Free-look camera
+* VAO/VBO rendering
+* Shader compilation
+* Depth testing
+* Basic mesh rendering
+
+### Implemented
+
+* Vertex shaders
+* Fragment shaders
+* Mesh abstraction
+* Plane rendering
+* Perspective projection
+
+---
+
+## Camera System
+
+A first-person spectator camera has been implemented.
+
+### Controls
+
+| Key   | Action             |
+| ----- | ------------------ |
+| W     | Move forward       |
+| S     | Move backward      |
+| A     | Move left          |
+| D     | Move right         |
+| SPACE | Jump               |
+| Mouse | Look around        |
+| ESC   | Toggle cursor lock |
+
+### Features
+
+* Yaw & pitch rotation
 * Mouse look
-* Spectator movement
-* FPS-style controls
+* Direction vectors
+* View matrix generation
+* Cursor lock toggle
 
-### Platform Layer
+---
 
-Supported:
+## Physics System
 
-* Linux
-* Windows
-* SDL abstraction
+A simple physics system has been added.
 
-### Project Architecture
+### Implemented
 
-* Core
-* Renderer
-* ECS
-* Components
-* Systems
-* Utilities
-* Input layer
+* Gravity
+* Velocity system
+* Jumping
+* Ground detection
+* Floor collision
+* Movement bounds
+
+### Physics Behavior
+
+* Player falls using gravity
+* Player cannot go below floor level
+* Jump only works while grounded
+* Movement limited inside map area
+
+---
+
+## Platform / Floor
+
+A large platform is rendered using OpenGL.
+
+### Features
+
+* Gray floor
+* Procedural grid pattern
+* Large walkable area
+* Collision support
+
+### Visual Style
+
+The floor uses:
+
+* Fragment shader grid effect
+* Dark gray base color
+* Lighter grid lines
+
+---
+
+## Input System
+
+Keyboard input is handled using SDL3.
+
+### Implemented Inputs
+
+* Movement keys
+* Jump
+* Cursor toggle
+* Mouse movement
 
 ---
 
 # Project Structure
 
 ```txt
-doofus/
-├── assets/
-├── build/
-├── external/
-│   └── glad/
-├── src/
-│   ├── components/
-│   ├── core/
-│   ├── ecs/
-│   ├── input/
-│   ├── platform/
-│   ├── renderer/
-│   ├── systems/
-│   └── utils/
-├── CMakeLists.txt
-└── README.md
-```
-
----
-
-# Folder Explanation
-
-## assets/
-
-Stores:
-
-* textures
-* models
-* shaders
-* audio
-* fonts
-
----
-
-## external/
-
-Third-party dependencies.
-
-Current:
-
-* GLAD
-
-Future:
-
-* stb_image
-* glm
-* assimp
-* imgui
-
----
-
-## src/core/
-
-Handles the engine lifecycle.
-
-### Files
-
-#### `Application.h`
-
-Responsible for:
-
-* initialization
-* main loop
-* shutdown
-
-#### `Application.cpp`
-
-Contains:
-
-* rendering loop
-* updates
-* camera logic
-* input handling
-* OpenGL initialization
-
----
-
-## src/platform/
-
-Platform and window abstraction layer.
-
-### IWindow.h
-
-Window abstraction interface.
-
-```cpp
-class IWindow {
-public:
-    virtual bool init(int width, int height, const char* title) = 0;
-    virtual void pollEvents() = 0;
-    virtual void swapBuffers() = 0;
-    virtual bool shouldClose() = 0;
-};
-```
-
----
-
-# SDL Backend
-
-## SDLWindow.h / SDLWindow.cpp
-
-Handles:
-
-* SDL initialization
-* OpenGL context creation
-* buffer swapping
-* event polling
-
----
-
-# Linux Backend
-
-## LinuxWindow.h / LinuxWindow.cpp
-
-Native Linux backend placeholder.
-
-Future:
-
-* X11 support
-* Wayland support
-
----
-
-# Windows Backend
-
-## Win32Window.h / Win32Window.cpp
-
-Native Win32 backend placeholder.
-
-Future:
-
-* Win32 rendering
-* DirectX support
-
----
-
-# WindowFactory
-
-## WindowFactory.h / WindowFactory.cpp
-
-Factory pattern used to select the backend:
-
-```cpp
-CreateWindow(PlatformType::SDL);
-```
-
----
-
-# Renderer
-
-## OpenGL Pipeline
-
-Current renderer uses:
-
-* VAO
-* VBO
-* Vertex Shader
-* Fragment Shader
-
----
-
-# Current Render Flow
-
-```txt
-Vertex Data
-    ↓
-VBO
-    ↓
-VAO
-    ↓
-Vertex Shader
-    ↓
-Fragment Shader
-    ↓
-Screen
-```
-
----
-
-# Input System
-
-## Keyboard Controls
-
-Current controls:
-
-* W → Forward
-* S → Backward
-* A → Left
-* D → Right
-* ESC → Toggle Cursor
-
----
-
-# Camera System
-
-## Spectator Camera
-
-Features:
-
-* Mouse look
-* Free movement
-* FPS-style movement
-
-Movement:
-
-* forward/backward
-* left/right
-* vertical movement (future)
-
----
-
-# OpenGL Setup
-
-## Version
-
-```txt
-OpenGL 4.6 Core
-```
-
-SDL setup:
-
-```cpp
-SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+src/
+├── camera/
+│   ├── Camera.cpp
+│   └── Camera.h
+
+├── components/
+│   ├── RigidBody.h
+│   └── Transform.h
+
+├── core/
+│   ├── Application.cpp
+│   └── Application.h
+
+├── ecs/
+
+├── input/
+│   ├── Input.cpp
+│   └── input.h
+
+├── platform/
+│   ├── IWindow.h
+│   ├── WindowFactory.cpp
+│   ├── WindowFactory.h
+│   │
+│   ├── sdl/
+│   │   ├── SDLWindow.cpp
+│   │   └── SDLWindow.h
+│   │
+│   ├── linux/
+│   │   ├── LinuxWindow.cpp
+│   │   └── LinuxWindow.h
+│   │
+│   └── windows/
+│       ├── Win32Window.cpp
+│       └── Win32Window.h
+
+├── renderer/
+│   ├── Mesh.cpp
+│   ├── Mesh.h
+│   ├── Shader.cpp
+│   └── Shader.h
+
+├── systems/
+│   ├── PhysicsSystem.cpp
+│   └── PhysicsSystem.h
+
+├── utils/
+
+└── main.cpp
 ```
 
 ---
 
 # Build System
 
-Uses:
+The project uses:
 
 * CMake
+* GCC / G++
+* SDL3
+* OpenGL
 
 ---
 
-# Dependencies
-
-## Linux
-
-Install dependencies:
+## Build Script
 
 ```bash
-sudo pacman -S sdl3 mesa glew cmake gcc
+./build.sh
 ```
 
-Ubuntu:
+The script automatically:
 
-```bash
-sudo apt install libsdl3-dev mesa-common-dev build-essential cmake
-```
+1. Removes old build files
+2. Creates a new build directory
+3. Runs CMake
+4. Compiles the project
+5. Launches the executable
 
 ---
 
-# Build Instructions
+# External Libraries
 
-## Clean Build
+## SDL3
 
-```bash
-rm -rf build
+Used for:
 
-mkdir build
-cd build
+* Windowing
+* Input
+* OpenGL context management
 
-cmake ..
-cmake --build .
-```
+## GLAD
+
+Used for:
+
+* Loading OpenGL functions
+
+## GLM
+
+Used for:
+
+* Vector math
+* Matrix transformations
+* Camera calculations
 
 ---
 
-# Run
+# Current Rendering Pipeline
 
-```bash
-./doofus
-```
-
----
-
-# Current Engine Flow
+The rendering flow currently works like this:
 
 ```txt
-main.cpp
-    ↓
 Application
     ↓
-Window Creation
+Camera Update
     ↓
-OpenGL Init
+Physics Update
     ↓
-Game Loop
+Shader Bind
     ↓
-Input
+Mesh Draw
     ↓
-Camera
-    ↓
-Render
+Buffer Swap
 ```
 
 ---
 
-# Future Roadmap
+# Current State
 
-## Rendering
+The application currently supports:
 
-Planned:
+* Real-time rendering
+* 3D camera movement
+* Physics-based movement
+* Jumping
+* Mouse look
+* Grid floor rendering
+* Platform collision
+* Modular architecture
 
-* Texture system
-* Mesh rendering
-* Model loading
-* Skybox
+---
+
+# Planned Improvements
+
+Possible next features:
+
+* Cube rendering
+* Texture loading
 * Lighting
-* Shadow mapping
-* PBR pipeline
-
----
-
-## ECS
-
-Planned:
-
-* Entity Manager
-* Component Registry
-* System Processing
-
----
-
-## Physics
-
-Planned:
-
-* Collision
-* Rigidbody
-* Gravity
-* Raycasting
-
----
-
-## Audio
-
-Planned:
-
-* SDL Audio
-* OpenAL
-* FMOD support
-
----
-
-## UI
-
-Planned:
-
-* ImGui integration
-* Debug tools
-* Inspector
-* Console
-
----
-
-## Scripting
-
-Possible future support:
-
-* Lua
-* C#
-* Python embedding
-
----
-
-# Suggested Next Steps
-
-Recommended development order:
-
-1. Camera matrix
-2. Projection matrix
-3. Cube rendering
-4. Depth testing
-5. Texture loading
-6. Basic ECS
-7. Mesh abstraction
-8. Scene system
-9. Lighting
-10. Model loading
-
----
-
-# Recommended Libraries
-
-## Math
-
-Use:
-
-[GLM](https://github.com/g-truc/glm?utm_source=chatgpt.com)
-
----
-
-## Image Loading
-
-Use:
-
-[stb_image](https://github.com/nothings/stb?utm_source=chatgpt.com)
-
----
-
-## GUI
-
-Use:
-
-[Dear ImGui](https://github.com/ocornut/imgui?utm_source=chatgpt.com)
-
----
-
-# Engine Goal
-
-doofus is intended to become:
-
-* a lightweight engine
-* a modern OpenGL renderer
-* an ECS-based architecture
-* a modular framework
-* a learnable engine architecture
-* a cross-platform engine foundation
-
----
-
-# Current Capabilities
-
-At the current stage, the engine can:
-
-* open a window
-* create an OpenGL context
-* render a triangle
-* handle input
-* support basic camera movement
-* lock/unlock the mouse cursor
-* run a render loop
-* compile shaders
-* manage the VAO/VBO pipeline
-
----
-
-# Example Expansion Path
-
-```txt
-Triangle
-↓
-Cube
-↓
-3D Camera
-↓
-Textures
-↓
-Lighting
-↓
-Scene System
-↓
-Game
-```
+* Entity system
+* Scene management
+* Collision boxes
+* Model loading
+* UI system
+* Shadow rendering
+* Audio system
+* Multiplayer
+* Editor tools

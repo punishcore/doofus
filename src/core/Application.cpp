@@ -1,8 +1,15 @@
-#include "core/Application.h"
-#include "platform/WindowFactory.h"
+#include "Application.h"
 
-#include <iostream>
-#include <vector>
+#include "../platform/WindowFactory.h"
+#include "../platform/sdl/SDLWindow.h"
+
+#include "../renderer/Mesh.h"
+#include "../renderer/Shader.h"
+
+#include "../components/Transform.h"
+#include "../components/RigidBody.h"
+
+#include "../systems/PhysicsSystem.h"
 
 #include <SDL3/SDL.h>
 
@@ -11,6 +18,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include <iostream>
 
 bool Application::init()
 {
@@ -25,277 +34,289 @@ bool Application::init()
         return false;
     }
 
-    std::cout << "OpenGL Version: "
-              << glGetString(GL_VERSION)
-              << "\n";
-
     glViewport(0, 0, 1280, 720);
 
     glEnable(GL_DEPTH_TEST);
+
+    SDLWindow* sdl =
+        static_cast<SDLWindow*>(window.get());
+
+    SDL_SetWindowRelativeMouseMode(
+        sdl->getWindow(),
+        true
+    );
 
     return true;
 }
 
 void Application::run()
 {
-    float vertices[] = {
-        // floor
-        -50.0f, 0.0f, -50.0f,
-         50.0f, 0.0f, -50.0f,
-         50.0f, 0.0f,  50.0f,
+    SDLWindow* sdl =
+        static_cast<SDLWindow*>(window.get());
 
-         50.0f, 0.0f,  50.0f,
-        -50.0f, 0.0f,  50.0f,
-        -50.0f, 0.0f, -50.0f
+    const char* vertexShader = R"(
+        #version 460 core
+
+        layout (location = 0) in vec3 aPos;
+
+        uniform mat4 model;
+        uniform mat4 view;
+        uniform mat4 projection;
+
+        out vec3 FragPos;
+
+        void main()
+        {
+            FragPos = aPos;
+
+            gl_Position =
+                projection *
+                view *
+                model *
+                vec4(aPos, 1.0);
+        }
+    )";
+
+    const char* fragmentShader = R"(
+        #version 460 core
+
+        in vec3 FragPos;
+
+        out vec4 FragColor;
+
+        void main()
+        {
+            float grid =
+                abs(fract(FragPos.x * 0.5) - 0.5)
+              + abs(fract(FragPos.z * 0.5) - 0.5);
+
+            float line = step(0.48, grid);
+
+            vec3 base = vec3(0.25);
+            vec3 gridColor = vec3(0.4);
+
+            vec3 color =
+                mix(base, gridColor, line);
+
+            FragColor = vec4(color, 1.0);
+        }
+    )";
+
+    Shader shader(vertexShader, fragmentShader);
+
+    float planeVertices[] = {
+
+        -20.0f, 0.0f, -20.0f,
+         20.0f, 0.0f, -20.0f,
+         20.0f, 0.0f,  20.0f,
+
+        -20.0f, 0.0f, -20.0f,
+         20.0f, 0.0f,  20.0f,
+        -20.0f, 0.0f,  20.0f
     };
 
-    const char* vertexShaderSource =
-        "#version 460 core\n"
-        "layout (location = 0) in vec3 aPos;\n"
-
-        "uniform mat4 model;\n"
-        "uniform mat4 view;\n"
-        "uniform mat4 projection;\n"
-
-        "void main()\n"
-        "{\n"
-        "   gl_Position = projection * view * model * vec4(aPos, 1.0);\n"
-        "}\0";
-
-    const char* fragmentShaderSource =
-        "#version 460 core\n"
-
-        "out vec4 FragColor;\n"
-
-        "void main()\n"
-        "{\n"
-        "   FragColor = vec4(0.3, 0.8, 0.3, 1.0);\n"
-        "}\0";
-
-    GLuint VAO, VBO;
-
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        sizeof(vertices),
-        vertices,
-        GL_STATIC_DRAW
+    Mesh plane(
+        planeVertices,
+        sizeof(planeVertices)
     );
 
-    glVertexAttribPointer(
-        0,
-        3,
-        GL_FLOAT,
-        GL_FALSE,
-        3 * sizeof(float),
-        (void*)0
-    );
+    TransformComponent playerTransform;
+    playerTransform.position =
+        glm::vec3(0.0f, 0.0f, 0.0f);
 
-    glEnableVertexAttribArray(0);
+    RigidbodyComponent playerRigidbody;
 
-    GLuint vertexShader =
-        glCreateShader(GL_VERTEX_SHADER);
+    Uint64 last =
+        SDL_GetPerformanceCounter();
 
-    glShaderSource(
-        vertexShader,
-        1,
-        &vertexShaderSource,
-        NULL
-    );
-
-    glCompileShader(vertexShader);
-
-    GLuint fragmentShader =
-        glCreateShader(GL_FRAGMENT_SHADER);
-
-    glShaderSource(
-        fragmentShader,
-        1,
-        &fragmentShaderSource,
-        NULL
-    );
-
-    glCompileShader(fragmentShader);
-
-    GLuint shaderProgram =
-        glCreateProgram();
-
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-
-    glLinkProgram(shaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    glm::vec3 cameraPos   = glm::vec3(0.0f, 1.0f, 3.0f);
-    glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
-
-    float yaw = -90.0f;
-    float pitch = 0.0f;
-
-    SDL_SetWindowRelativeMouseMode(
-        SDL_GetKeyboardFocus(),
-        true
-    );
-
-    glm::mat4 projection = glm::perspective(
-        glm::radians(75.0f),
-        1280.0f / 720.0f,
-        0.1f,
-        500.0f
-    );
-
-    Uint64 last = SDL_GetPerformanceCounter();
+    bool cursorLocked = true;
 
     while (!window->shouldClose())
     {
-        window->pollEvents();
-
-        Uint64 now = SDL_GetPerformanceCounter();
+        Uint64 now =
+            SDL_GetPerformanceCounter();
 
         float dt =
-            (float)(now - last) /
-            SDL_GetPerformanceFrequency();
+            (float)(now - last)
+            / SDL_GetPerformanceFrequency();
 
         last = now;
 
-        const bool* keys =
-            SDL_GetKeyboardState(NULL);
+        window->pollEvents();
 
-        float cameraSpeed = 10.0f * dt;
-
-        if (keys[SDL_SCANCODE_W])
-            cameraPos += cameraSpeed * cameraFront;
-
-        if (keys[SDL_SCANCODE_S])
-            cameraPos -= cameraSpeed * cameraFront;
-
-        if (keys[SDL_SCANCODE_A])
-            cameraPos -= glm::normalize(
-                glm::cross(cameraFront, cameraUp)
-            ) * cameraSpeed;
-
-        if (keys[SDL_SCANCODE_D])
-            cameraPos += glm::normalize(
-                glm::cross(cameraFront, cameraUp)
-            ) * cameraSpeed;
-
-        if (keys[SDL_SCANCODE_SPACE])
-            cameraPos.y += cameraSpeed;
-
-        if (keys[SDL_SCANCODE_LSHIFT])
-            cameraPos.y -= cameraSpeed;
-
-        float mouseX, mouseY;
+        float mx, my;
 
         SDL_GetRelativeMouseState(
-            &mouseX,
-            &mouseY
+            &mx,
+            &my
         );
 
         float sensitivity = 0.1f;
 
-        mouseX *= sensitivity;
-        mouseY *= sensitivity;
+        if (cursorLocked)
+        {
+            camera.yaw += mx * sensitivity;
 
-        yaw += mouseX;
-        pitch -= mouseY;
+            camera.pitch -= my * sensitivity;
 
-        if (pitch > 89.0f)
-            pitch = 89.0f;
+            if (camera.pitch > 89.0f)
+                camera.pitch = 89.0f;
 
-        if (pitch < -89.0f)
-            pitch = -89.0f;
+            if (camera.pitch < -89.0f)
+                camera.pitch = -89.0f;
 
-        glm::vec3 direction;
+            camera.updateVectors();
+        }
 
-        direction.x =
-            cos(glm::radians(yaw)) *
-            cos(glm::radians(pitch));
+        const bool* keys =
+            SDL_GetKeyboardState(NULL);
 
-        direction.y =
-            sin(glm::radians(pitch));
+        float speed = 5.0f * dt;
 
-        direction.z =
-            sin(glm::radians(yaw)) *
-            cos(glm::radians(pitch));
+        glm::vec3 right =
+            glm::normalize(
+                glm::cross(
+                    camera.front,
+                    camera.up
+                )
+            );
 
-        cameraFront =
-            glm::normalize(direction);
+        glm::vec3 moveDir =
+            glm::vec3(0.0f);
 
-        glm::mat4 model =
-            glm::mat4(1.0f);
+        glm::vec3 flatFront =
+            glm::normalize(
+                glm::vec3(
+                    camera.front.x,
+                    0.0f,
+                    camera.front.z
+                )
+            );
 
-        glm::mat4 view = glm::lookAt(
-            cameraPos,
-            cameraPos + cameraFront,
-            cameraUp
+        if (keys[SDL_SCANCODE_W])
+            moveDir += flatFront;
+
+        if (keys[SDL_SCANCODE_S])
+            moveDir -= flatFront;
+
+        if (keys[SDL_SCANCODE_A])
+            moveDir -= right;
+
+        if (keys[SDL_SCANCODE_D])
+            moveDir += right;
+
+        if (glm::length(moveDir) > 0.0f)
+        {
+            moveDir =
+                glm::normalize(moveDir);
+
+            playerTransform.position +=
+                moveDir * speed;
+        }
+
+        if (
+            keys[SDL_SCANCODE_SPACE]
+            &&
+            playerRigidbody.grounded
+        )
+        {
+            playerRigidbody.velocity.y =
+                playerRigidbody.jumpForce;
+        }
+
+        PhysicsSystem::update(
+            playerTransform,
+            playerRigidbody,
+            dt
         );
+
+        camera.position =
+            playerTransform.position
+            +
+            glm::vec3(0.0f, 1.7f, 0.0f);
+
+        static bool escPressed = false;
+
+        if (keys[SDL_SCANCODE_ESCAPE])
+        {
+            if (!escPressed)
+            {
+                cursorLocked =
+                    !cursorLocked;
+
+                SDL_SetWindowRelativeMouseMode(
+                    sdl->getWindow(),
+                    cursorLocked
+                );
+
+                escPressed = true;
+            }
+        }
+        else
+        {
+            escPressed = false;
+        }
 
         glClearColor(
             0.1f,
             0.1f,
-            0.15f,
+            0.12f,
             1.0f
         );
 
         glClear(
-            GL_COLOR_BUFFER_BIT |
+            GL_COLOR_BUFFER_BIT
+            |
             GL_DEPTH_BUFFER_BIT
         );
 
-        glUseProgram(shaderProgram);
+        shader.use();
 
-        unsigned int modelLoc =
-            glGetUniformLocation(
-                shaderProgram,
-                "model"
-            );
+        glm::mat4 model =
+            glm::mat4(1.0f);
 
-        unsigned int viewLoc =
-            glGetUniformLocation(
-                shaderProgram,
-                "view"
-            );
+        glm::mat4 view =
+            camera.getViewMatrix();
 
-        unsigned int projectionLoc =
-            glGetUniformLocation(
-                shaderProgram,
-                "projection"
+        glm::mat4 projection =
+            glm::perspective(
+                glm::radians(90.0f),
+                1280.0f / 720.0f,
+                0.1f,
+                100.0f
             );
 
         glUniformMatrix4fv(
-            modelLoc,
+            glGetUniformLocation(
+                shader.id,
+                "model"
+            ),
             1,
             GL_FALSE,
             glm::value_ptr(model)
         );
 
         glUniformMatrix4fv(
-            viewLoc,
+            glGetUniformLocation(
+                shader.id,
+                "view"
+            ),
             1,
             GL_FALSE,
             glm::value_ptr(view)
         );
 
         glUniformMatrix4fv(
-            projectionLoc,
+            glGetUniformLocation(
+                shader.id,
+                "projection"
+            ),
             1,
             GL_FALSE,
             glm::value_ptr(projection)
         );
 
-        glBindVertexArray(VAO);
-
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        plane.draw();
 
         window->swapBuffers();
     }

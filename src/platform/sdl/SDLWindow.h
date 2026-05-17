@@ -1,4 +1,5 @@
 #pragma once
+
 #include "../IWindow.h"
 #include <SDL3/SDL.h>
 
@@ -12,9 +13,10 @@ public:
     void swapBuffers() override;
     bool shouldClose() override;
 
+    SDL_Window* getWindow();
+
 private:
     SDL_Window* window = nullptr;
     SDL_GLContext glContext = nullptr;
-
     bool closed = false;
 };

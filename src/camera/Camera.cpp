@@ -1,0 +1,35 @@
+#include "Camera.h"
+
+#include <glm/gtc/matrix_transform.hpp>
+
+Camera::Camera()
+{
+    updateVectors();
+}
+
+glm::mat4 Camera::getViewMatrix()
+{
+    return glm::lookAt(
+        position,
+        position + front,
+        up
+    );
+}
+
+void Camera::updateVectors()
+{
+    glm::vec3 direction;
+
+    direction.x =
+        cos(glm::radians(yaw)) *
+        cos(glm::radians(pitch));
+
+    direction.y =
+        sin(glm::radians(pitch));
+
+    direction.z =
+        sin(glm::radians(yaw)) *
+        cos(glm::radians(pitch));
+
+    front = glm::normalize(direction);
+}
