@@ -13,6 +13,12 @@ add_executable(doofus
 
     # core
     src/core/Application.cpp
+    src/core/Time.cpp
+
+    src/game/Game.cpp
+    src/game/scene/Scene.cpp
+
+    src/player/PlayerController.cpp
 
     # platform
     src/platform/sdl/SDLWindow.cpp
@@ -23,6 +29,8 @@ add_executable(doofus
     # renderer
     src/renderer/Shader.cpp
     src/renderer/Mesh.cpp
+    src/renderer/Texture.cpp
+    src/renderer/Sky.cpp
 
     # camera
     src/camera/Camera.cpp
@@ -46,9 +54,12 @@ add_executable(doofus
 target_include_directories(doofus PRIVATE
     src
     external/glad/include
+    external/stb
 )
 
 target_link_libraries(doofus PRIVATE
     SDL3::SDL3
     OpenGL::GL
 )
+
+file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})

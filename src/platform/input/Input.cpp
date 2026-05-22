@@ -1,6 +1,5 @@
 #include "Input.h"
 
-#include <SDL3/SDL.h>
 #include <cstdlib>
 
 bool Input::w = false;
@@ -9,62 +8,79 @@ bool Input::s = false;
 bool Input::d = false;
 
 bool Input::space = false;
+
 bool Input::escape = false;
+
+bool Input::escapePressed = false;
 
 float Input::mouseX = 0.0f;
 float Input::mouseY = 0.0f;
 
-void Input::update()
+void Input::beginFrame()
 {
-    SDL_Event e;
+    escapePressed = false;
 
-    while (SDL_PollEvent(&e))
+    mouseX = 0.0f;
+    mouseY = 0.0f;
+}
+
+void Input::handleEvent(
+    SDL_Event& e
+)
+{
+    if (e.type == SDL_EVENT_QUIT)
     {
-        if (e.type == SDL_EVENT_QUIT)
+        exit(0);
+    }
+
+    if (
+        e.type == SDL_EVENT_KEY_DOWN
+        || e.type == SDL_EVENT_KEY_UP
+    )
+    {
+        bool pressed =
+            (
+                e.type
+                == SDL_EVENT_KEY_DOWN
+            );
+
+        switch (e.key.key)
         {
-            exit(0);
-        }
+            case SDLK_W:
+                w = pressed;
+                break;
 
-        if (
-            e.type == SDL_EVENT_KEY_DOWN
-            ||
-            e.type == SDL_EVENT_KEY_UP
-        )
-        {
-            bool pressed =
-                e.type == SDL_EVENT_KEY_DOWN;
+            case SDLK_A:
+                a = pressed;
+                break;
 
-            switch (e.key.key)
-            {
-                case SDLK_W:
-                    w = pressed;
-                    break;
+            case SDLK_S:
+                s = pressed;
+                break;
 
-                case SDLK_A:
-                    a = pressed;
-                    break;
+            case SDLK_D:
+                d = pressed;
+                break;
 
-                case SDLK_S:
-                    s = pressed;
-                    break;
+            case SDLK_SPACE:
+                space = pressed;
+                break;
 
-                case SDLK_D:
-                    d = pressed;
-                    break;
+            case SDLK_ESCAPE:
 
-                case SDLK_SPACE:
-                    space = pressed;
-                    break;
+                escape = pressed;
 
-                case SDLK_ESCAPE:
-                    escape = pressed;
-                    break;
-            }
+                if (pressed)
+                    escapePressed = true;
+
+                break;
         }
     }
 
-    SDL_GetRelativeMouseState(
-        &mouseX,
-        &mouseY
-    );
+    if (e.type == SDL_EVENT_MOUSE_MOTION)
+    {
+        mouseX = e.motion.xrel;
+
+        mouseY = e.motion.yrel;
+    }
 }

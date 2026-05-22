@@ -1,17 +1,14 @@
 #pragma once
 
-#include "../components/Transform.h"
-#include "../components/RigidBody.h"
-
 #include "../../renderer/world/World.h"
+#include "../components/RigidBody.h"
+#include "../components/Transform.h"
 
-class PhysicsSystem
-{
+class PhysicsSystem {
 public:
-    static void update(
-        TransformComponent& transform,
-        RigidbodyComponent& rigidbody,
-        World& world,
-        float dt
-    );
+  static void update(TransformComponent &transform,
+                     RigidbodyComponent &rigidbody, World &world, float dt);
+
+private:
+  static bool checkCollision(float x, float y, float z, World &world);
 };

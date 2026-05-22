@@ -1,9 +1,3 @@
 #pragma once
 
-enum class BlockType
-{
-    Air,
-    Grass,
-    Dirt,
-    Stone
-};
+enum class BlockType { Air, Grass, Dirt, Stone };

@@ -1,37 +1,37 @@
 #pragma once
 
-#include <vector>
-#include <memory>
-#include "block/BlockType.h"
 #include "../Mesh.h"
+#include "block/BlockType.h"
 
-class Chunk
-{
+#include <memory>
+#include <vector>
+
+class Chunk {
 public:
-    static constexpr int SIZE = 16;
-    static constexpr int HEIGHT = 64;
+  static constexpr int SIZE = 16;
+  static constexpr int HEIGHT = 128;
 
-    int chunkX;
-    int chunkZ;
+  int chunkX;
+  int chunkZ;
 
-    BlockType blocks[SIZE][HEIGHT][SIZE];
+  BlockType blocks[SIZE][HEIGHT][SIZE];
 
-    std::vector<float> vertices;
-    std::unique_ptr<Mesh> mesh;
+  std::vector<float> vertices;
 
-    Chunk(int x, int z);
+  std::unique_ptr<Mesh> mesh;
 
-    void generate();
-    void buildMesh();
-    void draw();
+  Chunk(int x, int z);
 
-    bool isAir(int x, int y, int z);
+  bool dirty = false;
 
-    void addFace(
-        const float* face,
-        int count,
-        float worldX,
-        float worldY,
-        float worldZ
-    );
+  void generate();
+
+  void buildMesh();
+
+  void draw();
+
+  bool isAir(int x, int y, int z);
+
+  void addFace(const float *face, int count, float worldX, float worldY,
+               float worldZ, int tileIndex);
 };

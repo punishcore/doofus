@@ -1,15 +1,31 @@
 #pragma once
 
-#include <vector>
-#include <memory>
 #include "Chunk.h"
 
-class World
-{
-public:
-    std::vector<std::unique_ptr<Chunk>> chunks;
+#include <memory>
+#include <unordered_map>
 
-    void generate();
-    void draw();
-    bool isSolid(int x, int y, int z);
+class World {
+public:
+  std::unordered_map<long long, std::unique_ptr<Chunk>> chunks;
+
+  int renderDistance = 4;
+
+  void update(float playerX, float playerZ);
+
+  void draw(float playerX, float playerZ);
+
+  bool isSolid(int x, int y, int z);
+
+  int getHeight(int x, int z);
+
+  Chunk *getChunk(int chunkX, int chunkZ);
+
+  void loadChunk(int chunkX, int chunkZ);
+
+  void unloadFarChunks(int centerChunkX, int centerChunkZ);
+
+  long long getChunkKey(int x, int z);
+
+  void setBlock(int x, int y, int z, BlockType type);
 };

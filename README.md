@@ -1,9 +1,7 @@
-
----
-
+````md
 # Documentation
 
-## Overview
+# Overview
 
 This project is a real-time 3D voxel-based engine built using:
 
@@ -13,137 +11,345 @@ This project is a real-time 3D voxel-based engine built using:
 * CMake build system
 * Custom ECS-style physics system
 * Procedural voxel world (chunk-based)
-* Terrain generation system (noise-based)
+* Terrain generation system
+* Dynamic sky rendering
 * First-person camera controller
 * Basic collision system with voxel world integration
 
-The engine is structured around **chunked infinite-style terrain simulation** using procedural generation.
+The engine is structured around a modular architecture using:
+
+```txt
+Application
+    ↓
+Game
+    ↓
+Scene
+    ↓
+Renderer / World / Physics / Player
+```
 
 ---
 
-# Features Implemented
+# Engine Architecture
 
-## Window System
+## Application Layer
+
+The `Application` layer handles:
+
+* Window initialization
+* OpenGL context setup
+* Main loop execution
+* Delta time calculation
+* Buffer swapping
+* Event polling
+
+### Main Loop
+
+```cpp
+while (!window->shouldClose())
+{
+    window->pollEvents();
+
+    game.update(dt, window);
+
+    game.render();
+
+    window->swapBuffers();
+}
+```
+
+---
+
+## Game Layer
+
+The `Game` system acts as a high-level game manager.
+
+### Responsibilities
+
+* Scene management
+* Game lifecycle
+* Future scene switching support
+* Gameplay orchestration
+
+---
+
+## Scene Layer
+
+The `Scene` system contains the actual gameplay world.
+
+### Responsibilities
+
+* Camera
+* Physics
+* Player
+* Sky rendering
+* Terrain rendering
+* Input handling
+* World simulation
+
+### Advantages
+
+* Modular architecture
+* Easier expansion
+* Cleaner codebase
+* Future support for:
+  * Main menu
+  * Pause scenes
+  * Multiplayer lobby
+  * Loading scenes
+
+---
+
+# Window System
 
 The application uses SDL3 to manage:
 
 * OpenGL context creation
 * Window lifecycle
 * Input polling
-* Mouse capture (relative mode)
+* Mouse capture
 * Buffer swapping
-
-### Implemented Features
-
-* SDL3 window initialization
-* OpenGL context setup
-* Relative mouse mode (FPS camera)
-* Frame buffer swap system
 
 ---
 
-## OpenGL Rendering
+## Features Implemented
 
-Rendering system is built on modern OpenGL:
+### Native Window Features
 
-### Features
+* Resizable window
+* Native title bar
+* Minimize button
+* Maximize button
+* Close button
+* Window dragging support
 
-* VAO / VBO mesh system
-* GLSL shaders (vertex + fragment)
-* Depth testing enabled
-* Perspective projection
-* Chunk-based mesh rendering
+### SDL Window Flags
 
-### Pipeline
-
-```txt
-World → Chunk Mesh → Mesh Buffer → Shader → Screen
+```cpp
+SDL_WINDOW_OPENGL
+| SDL_WINDOW_RESIZABLE
+| SDL_WINDOW_HIGH_PIXEL_DENSITY
 ```
 
 ---
 
-## Camera System (First Person)
+## OpenGL Context
 
-A FPS-style camera is implemented.
+Current renderer uses:
 
-### Controls
-
-| Key   | Action       |
-| ----- | ------------ |
-| W     | Move forward |
-| S     | Move back    |
-| A     | Move left    |
-| D     | Move right   |
-| SPACE | Jump         |
-| Mouse | Look around  |
-| ESC   | Toggle mouse |
+```txt
+OpenGL 4.6 Core Profile
+```
 
 ### Features
 
-* Yaw & pitch rotation
-* Camera vector recalculation
-* View matrix generation
-* Mouse sensitivity control
+* Modern rendering pipeline
+* VSync support
+* Depth testing
+* GLAD loader integration
 
 ---
 
-## Physics System
+# Input System
 
-Physics system is integrated with voxel world collision.
+The engine has a dedicated SDL input abstraction layer.
 
-### Features
+Folder:
+
+```txt
+src/platform/input
+```
+
+---
+
+## Features
+
+* Keyboard state tracking
+* Mouse delta tracking
+* Relative mouse mode
+* ESC cursor toggle
+* Persistent key states
+
+---
+
+## Controls
+
+| Key | Action |
+|---|---|
+| W | Move Forward |
+| S | Move Backward |
+| A | Move Left |
+| D | Move Right |
+| SPACE | Jump |
+| Mouse | Look Around |
+| ESC | Toggle Cursor |
+
+---
+
+# Camera System
+
+A first-person FPS camera system is implemented.
+
+Files:
+
+```txt
+src/camera/Camera.*
+```
+
+---
+
+## Features
+
+* Yaw rotation
+* Pitch rotation
+* Mouse sensitivity
+* View matrix generation
+* Direction vector recalculation
+* FPS-style movement
+
+---
+
+## Camera Math
+
+### Front Vector Calculation
+
+```cpp
+direction.x =
+cos(glm::radians(yaw))
+* cos(glm::radians(pitch));
+
+direction.y =
+sin(glm::radians(pitch));
+
+direction.z =
+sin(glm::radians(yaw))
+* cos(glm::radians(pitch));
+```
+
+---
+
+# Player Controller
+
+Player movement is handled separately from physics.
+
+Files:
+
+```txt
+src/player/PlayerController.*
+```
+
+---
+
+## Features
+
+* FPS movement
+* Jumping
+* Mouse look
+* Cursor lock
+* Camera follow
+* Velocity-based movement
+
+---
+
+# Physics System
+
+Physics is integrated with the voxel world system.
+
+Files:
+
+```txt
+src/ecs/systems/PhysicsSystem.*
+```
+
+---
+
+## Features
 
 * Gravity simulation
 * Velocity integration
-* Ground detection via voxel queries
-* Jumping system
-* Friction (horizontal damping)
-* Collision with world blocks
+* Ground detection
+* Jump force
+* Collision handling
+* Horizontal movement damping
 
-### Physics Flow
+---
+
+## Physics Flow
 
 ```txt
-Input → Velocity → Gravity → Collision Check → Position Update
+Input
+    ↓
+Velocity Update
+    ↓
+Gravity
+    ↓
+Collision Detection
+    ↓
+Position Correction
 ```
 
 ---
 
-## Voxel World System
+# ECS-style Architecture
+
+The engine follows a lightweight ECS-inspired structure.
+
+Folders:
+
+```txt
+src/ecs/components
+src/ecs/systems
+```
+
+---
+
+## Components
+
+| Component | Purpose |
+|---|---|
+| TransformComponent | Position data |
+| RigidbodyComponent | Physics data |
+
+---
+
+## Systems
+
+| System | Purpose |
+|---|---|
+| PhysicsSystem | Physics simulation |
+
+---
+
+# Voxel World System
 
 This is the core system of the engine.
 
+The world is chunk-based and procedurally generated.
+
 ---
 
-### World Structure
+# World Structure
 
-The world is divided into chunks:
-
-```
+```txt
 World
  ├── Chunk (-2, -2)
  ├── Chunk (-1, -2)
- ├── ...
+ ├── Chunk (0, 0)
+ ├── Chunk (1, 0)
  └── Chunk (2, 2)
 ```
 
-Each chunk contains:
-
-* SIZE = 16 (x and z)
-* HEIGHT = 64 (y)
-* 3D block array
-
 ---
 
-### Chunk System
+## Chunk System
 
-Each chunk:
+Each chunk contains:
 
-* Stores voxel data
-* Generates terrain
-* Builds mesh (only visible faces)
-* Handles rendering
+* SIZE = 16
+* HEIGHT = 64
+* 3D block array storage
 
-#### Block Storage
+### Block Storage
 
 ```cpp
 BlockType blocks[SIZE][HEIGHT][SIZE];
@@ -151,184 +357,328 @@ BlockType blocks[SIZE][HEIGHT][SIZE];
 
 ---
 
-## Procedural Terrain Generation
+# Procedural Terrain Generation
 
-Terrain is generated using **procedural noise-like functions**.
+Terrain generation uses procedural mathematical functions.
 
-### Current Implementation
+---
 
-You are using:
-
-* sine-based noise
-* cosine-based variation
-* amplitude scaling
+## Current Terrain Logic
 
 ```cpp
-float noise = sin(worldX * 0.12f) * cos(worldZ * 0.12f);
-int height = 20 + (noise * 8);
+float noise =
+sin(worldX * 0.12f)
+* cos(worldZ * 0.12f);
+
+int height =
+20 + (noise * 8);
 ```
 
-### Terrain Behavior
+---
 
-* Flat-ish hills
+## Terrain Features
+
+* Hills
 * Smooth variation
 * Deterministic generation
 * Chunk-independent consistency
 
 ---
 
-## Terrain Generator System (Improved Version)
+# Terrain Generator System
 
-A modular terrain system exists:
+A modular terrain generator system exists.
 
-### Features
+Files:
 
-* Noise-based heightmap generation
-* Multi-layer terrain (grass/dirt/stone)
-* Chunk-aware world coordinates
-* Extensible biome system (planned)
-
-### Block Layers
-
-| Height Range | Block Type |
-| ------------ | ---------- |
-| Surface      | Grass      |
-| Below        | Dirt       |
-| Deep         | Stone      |
-
----
-
-## Mesh Optimization (Face Culling)
-
-Only visible faces are rendered.
-
-### Logic
-
-A face is added only if neighboring block is air:
-
-```cpp
-if (isAir(x, y + 1, z)) addFace(top);
-if (isAir(x, y - 1, z)) addFace(bottom);
-if (isAir(x, y, z + 1)) addFace(front);
-```
-
-### Result
-
-* Massive performance improvement
-* No internal cube faces rendered
-* Reduced vertex count significantly
-
----
-
-## World Collision System
-
-The physics system queries the voxel world:
-
-### isSolid(x, y, z)
-
-* Converts world position → chunk coordinates
-* Finds correct chunk
-* Converts to local coordinates
-* Checks block type
-
-```cpp
-return block != BlockType::Air;
+```txt
+renderer/world/TerrainGenerator.*
 ```
 
 ---
 
-### Collision Usage
+## Features
 
-Used in:
-
-* Player grounding
-* Movement restriction
-* Jump validation
+* Heightmap generation
+* Layered terrain
+* Chunk-aware coordinates
+* Extensible generation pipeline
 
 ---
 
-## Chunk Coordinate System
+## Terrain Layers
 
-World space → Chunk space conversion:
+| Layer | Block Type |
+|---|---|
+| Surface | Grass |
+| Underground | Dirt |
+| Deep Layer | Stone |
 
-```cpp
-chunkX = floor(x / Chunk::SIZE)
-chunkZ = floor(z / Chunk::SIZE)
+---
 
-localX = x - chunkX * Chunk::SIZE
-localZ = z - chunkZ * Chunk::SIZE
+# Biome System
+
+Biome architecture already exists.
+
+Files:
+
+```txt
+renderer/world/biome
 ```
 
-Supports:
-
-* Negative coordinates
-* Infinite-style expansion (conceptually)
-
 ---
 
-## Biome System (Planned Extension)
+## Planned Biomes
 
-Biome system will allow:
-
-* Grassland
+* Grasslands
 * Desert
-* Mountain
+* Mountains
 * Snow
 * Ocean
 
-### Planned Behavior
+---
 
-Each biome will modify:
+## Planned Biome Effects
 
-* Height scale
-* Block type distribution
-* Noise frequency
+* Height scaling
 * Terrain roughness
+* Noise frequency
+* Block variation
 
 ---
 
-## Input System
+# Chunk Mesh Generation
 
-SDL-based input handling:
-
-### Features
-
-* Keyboard state tracking
-* Mouse delta tracking
-* ESC toggle system
-* FPS movement mapping
+Chunks generate optimized meshes.
 
 ---
 
-## Physics + World Interaction
+## Features
 
-Player movement is directly influenced by voxel world:
+* Vertex batching
+* Face culling
+* Static mesh generation
+* GPU upload optimization
 
-### Interaction Flow
+---
 
-```txt
-Player Input
-    ↓
-Velocity Update
-    ↓
-Physics Simulation
-    ↓
-Voxel Collision Check (World::isSolid)
-    ↓
-Position Correction
-```
+# Face Culling Optimization
 
-### Ground Detection
+Only visible faces are rendered.
 
-Player is grounded if:
+---
+
+## Example
 
 ```cpp
-world.isSolid(feetX, feetY, feetZ)
+if (isAir(x, y + 1, z))
+    addFace(top);
 ```
 
 ---
 
-## Rendering Pipeline
+## Advantages
+
+* Lower vertex count
+* Better rendering performance
+* Lower VRAM usage
+* Faster chunk rendering
+
+---
+
+# Texture System
+
+Texture abstraction layer exists.
+
+Files:
+
+```txt
+renderer/Texture.*
+```
+
+---
+
+## Features
+
+* PNG loading
+* OpenGL texture upload
+* Texture binding abstraction
+* Texture atlas rendering
+
+---
+
+# Texture Atlas
+
+Voxel textures use a shared atlas.
+
+File:
+
+```txt
+assets/textures/atlas.png
+```
+
+---
+
+## Advantages
+
+* Reduced draw calls
+* Better batching
+* Fewer texture switches
+* Better GPU performance
+
+---
+
+# Shader System
+
+Modern GLSL shader abstraction exists.
+
+Files:
+
+```txt
+renderer/Shader.*
+```
+
+---
+
+## Features
+
+* Shader loading
+* Compilation
+* Uniform management
+* Program linking
+
+---
+
+## Current Shaders
+
+| Shader | Purpose |
+|---|---|
+| block.vert | Terrain vertex shader |
+| block.frag | Terrain fragment shader |
+| sky.vert | Sky vertex shader |
+| sky.frag | Sky atmosphere shader |
+
+---
+
+# Dynamic Sky System
+
+The engine supports procedural sky rendering.
+
+Files:
+
+```txt
+renderer/Sky.*
+```
+
+---
+
+## Features
+
+* Fullscreen sky rendering
+* Atmospheric gradients
+* Horizon blending
+* Dynamic color transitions
+
+---
+
+# Day-Night Cycle System
+
+Sky colors are controlled by the `Time` system.
+
+Files:
+
+```txt
+core/Time.*
+```
+
+---
+
+## Features
+
+* Dynamic sky colors
+* Smooth transitions
+* Time progression
+* Horizon interpolation
+
+---
+
+## Sky Rendering Flow
+
+```txt
+Time System
+    ↓
+Sky Colors
+    ↓
+Sky Shader
+    ↓
+Rendered Atmosphere
+```
+
+---
+
+# Collision System
+
+Physics interacts directly with voxel terrain.
+
+---
+
+## Collision Logic
+
+```cpp
+world.isSolid(x, y, z)
+```
+
+The system:
+
+1. Converts world coordinates
+2. Finds chunk
+3. Converts to local chunk coordinates
+4. Checks block solidity
+
+---
+
+# Chunk Coordinate Conversion
+
+World → Chunk coordinate conversion:
+
+```cpp
+chunkX = floor(x / Chunk::SIZE);
+
+localX =
+x - chunkX * Chunk::SIZE;
+```
+
+---
+
+## Features
+
+* Negative coordinate support
+* Infinite-world-ready foundation
+* Dynamic chunk lookup
+
+---
+
+# Infinite World Foundation
+
+Current architecture already supports future infinite terrain.
+
+---
+
+## Planned Expansion
+
+```txt
+Player Movement
+    ↓
+Chunk Streaming
+    ↓
+Chunk Generation
+    ↓
+Chunk Unloading
+```
+
+---
+
+# Rendering Pipeline
 
 ```txt
 Application Loop
@@ -339,66 +689,94 @@ Camera Update
     ↓
 Physics Update
     ↓
-World Draw
+World Rendering
+    ↓
+Sky Rendering
     ↓
 Swap Buffers
 ```
 
 ---
 
-## Memory & Performance Notes
+# Delta Time System
+
+The engine uses delta-time simulation.
+
+---
+
+## Advantages
+
+* FPS-independent movement
+* Stable physics
+* Smooth camera movement
+* Consistent gameplay timing
+
+---
+
+## Delta Time Example
+
+```cpp
+float dt =
+(now - last)
+/ SDL_GetPerformanceFrequency();
+```
+
+---
+
+# Window Abstraction Layer
+
+The engine supports backend abstraction.
+
+Folder:
+
+```txt
+src/platform
+```
+
+---
+
+## Current Backends
+
+| Backend | Status |
+|---|---|
+| SDLWindow | Active |
+| LinuxWindow | Placeholder |
+| Win32Window | Placeholder |
+
+---
+
+## Advantages
+
+* Multi-platform foundation
+* Easier backend swapping
+* Cleaner platform separation
+
+---
+
+# Project Structure
+
+```txt
+src/
+├── camera
+├── core
+├── ecs
+├── game
+├── platform
+├── player
+├── renderer
+└── utils
+```
+
+---
+
+# Memory & Performance Notes
 
 Current optimizations:
 
-* Chunk mesh prebuilt once
-* Face culling enabled
-* Static world generation
-* No runtime regeneration yet
-
----
-
-## Known Issues / Bugs
-
-* Possible memory leak risk if Mesh recreated often
-* Chunk regeneration not dynamic
-* No frustum culling yet
-* No chunk unloading system
-* Noise is basic (sin/cos, not real Perlin/Simplex)
-
----
-
-## Planned Improvements
-
-### World System
-
-* Infinite chunk streaming
-* Chunk unloading system
-* Threaded terrain generation
-* Real noise (Perlin / Simplex)
-
-### Rendering
-
-* Frustum culling
-* Texture atlas (block textures)
-* Greedy meshing
-
-### Physics
-
-* AABB collision system
-* Slope handling
-* Better grounding logic
-
-### Gameplay
-
-* Biomes system fully implemented
-* Water system
-* Trees / structures
-* Inventory system
-
-### Engine
-
-* ECS expansion
-* Save/load world
-* Editor tools
+* Chunk mesh caching
+* Face culling
+* Static chunk rendering
+* Texture atlas batching
+* OpenGL depth testing
 
 ---

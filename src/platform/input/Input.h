@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL3/SDL.h>
+
 class Input
 {
 public:
@@ -9,10 +11,17 @@ public:
     static bool d;
 
     static bool space;
+
     static bool escape;
+
+    static bool escapePressed;
 
     static float mouseX;
     static float mouseY;
 
-    static void update();
+    static void beginFrame();
+
+    static void handleEvent(
+        SDL_Event& e
+    );
 };

@@ -1,7 +1,9 @@
 #pragma once
 
-class Noise
-{
+class Noise {
 public:
-    static float get(float x, float z);
+  static float noise(float x, float z);
+
+  static float fbm(float x, float z, int octaves, float persistence,
+                   float scale);
 };

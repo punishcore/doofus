@@ -2,8 +2,7 @@
 
 #include "Chunk.h"
 
-class TerrainGenerator
-{
+class TerrainGenerator {
 public:
-    static void generate(Chunk& chunk);
+  static void generate(Chunk &chunk);
 };

@@ -1,6 +1,7 @@
 #pragma once
 
-class IWindow {
+class IWindow
+{
 public:
     virtual ~IWindow() = default;
 
@@ -11,6 +12,12 @@ public:
     ) = 0;
 
     virtual void pollEvents() = 0;
+
     virtual void swapBuffers() = 0;
+
     virtual bool shouldClose() = 0;
+
+    virtual int getWidth() = 0;
+
+    virtual int getHeight() = 0;
 };

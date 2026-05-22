@@ -1,13 +1,7 @@
 #pragma once
-#include <memory>
 #include "IWindow.h"
+#include <memory>
 
-enum class PlatformType {
-    SDL,
-    WIN32,
-    LINUX
-};
+enum class PlatformType { SDL, WIN32, LINUX };
 
-std::unique_ptr<IWindow> CreateWindow(
-    PlatformType type
-);
+std::unique_ptr<IWindow> CreateWindow(PlatformType type);

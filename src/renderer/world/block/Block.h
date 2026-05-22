@@ -2,18 +2,17 @@
 
 #include "../block/BlockType.h"
 
-class Chunk
-{
+class Chunk {
 public:
-    static constexpr int SIZE = 16;
-    static constexpr int HEIGHT = 64;
+  static constexpr int SIZE = 16;
+  static constexpr int HEIGHT = 64;
 
-    BlockType blocks[SIZE][HEIGHT][SIZE];
+  BlockType blocks[SIZE][HEIGHT][SIZE];
 
-    int chunkX;
-    int chunkZ;
+  int chunkX;
+  int chunkZ;
 
-    Chunk(int x, int z);
+  Chunk(int x, int z);
 
-    void generate();
+  void generate();
 };

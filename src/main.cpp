@@ -1,13 +1,13 @@
 #include "core/Application.h"
 
 int main() {
-    Application app;
+  Application app;
 
-    if (!app.init())
-        return -1;
+  if (!app.init())
+    return -1;
 
-    app.run();
-    app.shutdown();
+  app.run();
+  app.shutdown();
 
-    return 0;
+  return 0;
 }

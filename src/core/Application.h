@@ -1,11 +1,15 @@
 #pragma once
 
-#include "../platform/IWindow.h"
 #include "../camera/Camera.h"
+
+#include "../platform/IWindow.h"
+
+#include "../game/Game.h"
 
 #include <memory>
 
-class Application {
+class Application
+{
 public:
     bool init();
 
@@ -16,5 +20,5 @@ public:
 private:
     std::unique_ptr<IWindow> window;
 
-    Camera camera;
+    Game game;
 };

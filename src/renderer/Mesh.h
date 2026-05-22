@@ -2,18 +2,14 @@
 
 #include <glad/gl.h>
 
-class Mesh
-{
+class Mesh {
 public:
-    GLuint VAO;
-    GLuint VBO;
+  GLuint VAO;
+  GLuint VBO;
 
-    int vertexCount;
+  int vertexCount;
 
-    Mesh(
-        float* vertices,
-        unsigned int size
-    );
+  Mesh(float *vertices, unsigned int size);
 
-    void draw();
+  void draw();
 };

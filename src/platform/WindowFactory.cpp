@@ -7,24 +7,22 @@
 
 #include "linux/LinuxWindow.h"
 
-std::unique_ptr<IWindow> CreateWindow(PlatformType type)
-{
-    switch (type)
-    {
-        case PlatformType::SDL:
-            return std::make_unique<SDLWindow>();
+std::unique_ptr<IWindow> CreateWindow(PlatformType type) {
+  switch (type) {
+  case PlatformType::SDL:
+    return std::make_unique<SDLWindow>();
 
 #ifdef _WIN32
-        case PlatformType::WIN32:
-            return std::make_unique<Win32Window>();
+  case PlatformType::WIN32:
+    return std::make_unique<Win32Window>();
 #endif
 
 #ifdef __linux__
-        case PlatformType::LINUX:
-            return std::make_unique<LinuxWindow>();
+  case PlatformType::LINUX:
+    return std::make_unique<LinuxWindow>();
 #endif
 
-        default:
-            return nullptr;
-    }
+  default:
+    return nullptr;
+  }
 }
