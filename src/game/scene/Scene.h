@@ -2,16 +2,17 @@
 
 #include "../../camera/Camera.h"
 
-#include "../../renderer/world/World.h"
+#include "../../world/World.h"
 
-#include "../../renderer/Shader.h"
 #include "../../renderer/Sky.h"
-#include "../../renderer/Texture.h"
-
-#include "../../player/PlayerController.h"
+#include "../../renderer/opengl/Shader.h"
+#include "../../renderer/opengl/TextureArray.h"
+#include "../../renderer/ui/Crosshair.h"
 
 #include "../../ecs/components/RigidBody.h"
 #include "../../ecs/components/Transform.h"
+#include "../../player/PlayerController.h"
+#include "../../renderer/model/Model.h"
 
 #include "../../core/Time.h"
 
@@ -19,36 +20,36 @@
 
 #include <memory>
 
-class Scene
-{
+class Scene {
 public:
-    void init();
+  void init();
 
-    void update(
-        float dt,
-        SDL_Window* window
-    );
+  void update(float dt, SDL_Window *window);
 
-    void render();
+  void render();
 
 private:
-    Camera camera;
+  Camera camera;
 
-    World world;
+  World world;
 
-    Time time;
+  Time time;
 
-    Sky sky;
+  Sky sky;
 
-    std::unique_ptr<Shader> shader;
+  Crosshair crosshair;
 
-    std::unique_ptr<Texture> atlas;
+  std::unique_ptr<Shader> shader;
 
-    PlayerController playerController;
+  std::unique_ptr<TextureArray> atlas;
 
-    TransformComponent playerTransform;
+  std::unique_ptr<Model> playerModel;
 
-    RigidbodyComponent playerRigidbody;
+  PlayerController playerController;
 
-    bool cursorLocked = true;
+  TransformComponent playerTransform;
+
+  RigidbodyComponent playerRigidbody;
+
+  bool cursorLocked = true;
 };

@@ -1,16 +1,22 @@
 #version 460 core
 
 in vec2 TexCoord;
+flat in int TexLayer;
+in vec3 FragPos;
 
 out vec4 FragColor;
 
-uniform sampler2D atlas;
+uniform sampler2DArray atlas;
+
+uniform vec3 cameraPos;
+uniform vec3 fogColor;
+uniform float fogStart;
+uniform float fogEnd;
 
 void main()
 {
-    FragColor =
-        texture(
-            atlas,
-            TexCoord
-        );
+    vec4 texColor = texture(atlas, vec3(fract(TexCoord), TexLayer));
+    float dist = length(FragPos - cameraPos);
+    float fog = clamp((fogEnd - dist) / (fogEnd - fogStart), 0.0, 1.0);
+    FragColor = mix(vec4(fogColor,1.0), texColor, fog);
 }

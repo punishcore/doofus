@@ -1,100 +1,68 @@
 #include "Application.h"
 
+#include "../core/Setting.h"
 #include "../platform/WindowFactory.h"
-#include "../platform/sdl/SDLWindow.h"
 #include "../platform/input/Input.h"
-
+#include "../platform/sdl/SDLWindow.h"
 #include <SDL3/SDL.h>
 
 #include <glad/gl.h>
 
 #include <iostream>
 
-bool Application::init()
-{
-    window = CreateWindow(
-        PlatformType::SDL
-    );
+bool Application::init() {
+  window = CreateWindow(PlatformType::SDL);
 
-    if (!window->init(
-        1280,
-        720,
-        "doofus"
-    ))
-        return false;
+  if (!window->init(Setting::windowWidth, Setting::windowHeight, "doofus"))
+    return false;
 
-    if (!gladLoadGL(
-        (GLADloadfunc)
-        SDL_GL_GetProcAddress
-    ))
-    {
-        std::cout
-            << "GLAD FAILED\n";
+  if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress)) {
+    std::cout << "GLAD FAILED\n";
 
-        return false;
-    }
+    return false;
+  }
 
-    glViewport(
-        0,
-        0,
-        1280,
-        720
-    );
+  glViewport(0, 0, Setting::windowWidth, Setting::windowHeight);
 
-    glEnable(GL_DEPTH_TEST);
+  glEnable(GL_DEPTH_TEST);
 
-    SDLWindow* sdl =
-        static_cast<SDLWindow*>(
-            window.get()
-        );
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
 
-    SDL_SetWindowRelativeMouseMode(
-        sdl->getWindow(),
-        true
-    );
+  glDisable(GL_CULL_FACE);
 
-    game.init();
+  SDLWindow *sdl = static_cast<SDLWindow *>(window.get());
 
-    return true;
+  SDL_SetWindowRelativeMouseMode(sdl->getWindow(), true);
+
+  game.init();
+
+  return true;
 }
 
-void Application::run()
-{
-    SDLWindow* sdl =
-        static_cast<SDLWindow*>(
-            window.get()
-        );
+void Application::run() {
+  SDLWindow *sdl = static_cast<SDLWindow *>(window.get());
 
-    Uint64 last =
-        SDL_GetPerformanceCounter();
+  Uint64 last = SDL_GetPerformanceCounter();
 
-    while (!window->shouldClose())
-{
+  while (!window->shouldClose()) {
     Input::beginFrame();
 
     window->pollEvents();
 
-    Uint64 now =
-        SDL_GetPerformanceCounter();
+    Uint64 now = SDL_GetPerformanceCounter();
 
-    float dt =
-        (float)(now - last)
-        / SDL_GetPerformanceFrequency();
+    float dt = (float)(now - last) / SDL_GetPerformanceFrequency();
 
     last = now;
 
-    game.update(
-        dt,
-        sdl->getWindow()
-    );
+    game.update(dt, sdl->getWindow());
 
     game.render();
 
     window->swapBuffers();
-}
+  }
 }
 
-void Application::shutdown()
-{
-    window.reset();
-}
+void Application::shutdown() { window.reset(); }

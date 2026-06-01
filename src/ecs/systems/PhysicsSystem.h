@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../renderer/world/World.h"
+#include "../../world/World.h"
 #include "../components/RigidBody.h"
 #include "../components/Transform.h"
 

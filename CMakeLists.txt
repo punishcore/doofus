@@ -15,11 +15,22 @@ add_executable(doofus
     src/core/Application.cpp
     src/core/Time.cpp
 
+    #game
     src/game/Game.cpp
     src/game/scene/Scene.cpp
 
+    external/stb/stb_image_impl.cpp
+
+    #player
     src/player/PlayerController.cpp
 
+    #ui
+    src/renderer/ui/Crosshair.cpp
+
+    #model
+    src/renderer/model/Model.cpp
+    src/renderer/model/OBJLoader.cpp
+    
     # platform
     src/platform/sdl/SDLWindow.cpp
     src/platform/WindowFactory.cpp
@@ -27,9 +38,10 @@ add_executable(doofus
     src/platform/input/Input.cpp
 
     # renderer
-    src/renderer/Shader.cpp
-    src/renderer/Mesh.cpp
-    src/renderer/Texture.cpp
+    src/renderer/opengl/Shader.cpp
+    src/renderer/opengl/Mesh.cpp
+    src/renderer/opengl/TextureArray.cpp
+    src/renderer/opengl/Texture.cpp
     src/renderer/Sky.cpp
 
     # camera
@@ -39,10 +51,19 @@ add_executable(doofus
     src/ecs/systems/PhysicsSystem.cpp
 
     # world
-    src/renderer/world/Chunk.cpp
-    src/renderer/world/Noise.cpp
-    src/renderer/world/TerrainGenerator.cpp
-    src/renderer/world/World.cpp
+    src/world/Chunk.cpp
+    src/world/noise/Noise.cpp
+    # src/world/noise/PerlinNoise.cpp
+    # src/world/noise/CellularNoise.cpp
+    src/world/noise/FBMNoise.cpp
+    # src/world/noise/RidgeNoise.cpp
+    # src/world/noise/ValueNoise.cpp
+    src/world/TerrainGenerator.cpp
+    src/world/mesher/GreedyMesher.cpp
+    src/world/World.cpp
+    src/world/biome/BiomeManager.cpp
+    src/world/biome/plain/PlainBiome.cpp
+    src/world/biome/desert/DesertBiome.cpp
 
     # glad
     external/glad/src/gl.c

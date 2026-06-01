@@ -1,0 +1,37 @@
+#include "Chunk.h"
+#include "World.h"
+#include "mesher/GreedyMesher.h"
+
+#include <cstring>
+
+Chunk::Chunk(int x, int z, World *worldPtr) {
+    chunkX = x;
+    chunkZ = z;
+    world = worldPtr;
+}
+
+void Chunk::buildMesh() {
+    Chunk* neighborNX = world->getChunk(chunkX - 1, chunkZ);
+    Chunk* neighborPX = world->getChunk(chunkX + 1, chunkZ);
+    Chunk* neighborNZ = world->getChunk(chunkX, chunkZ - 1);
+    Chunk* neighborPZ = world->getChunk(chunkX, chunkZ + 1);
+
+    GreedyMesher::build(*this, neighborNX, neighborPX, neighborNZ, neighborPZ);
+ 
+    if (vertices.empty()) {
+        mesh.reset();
+        return;
+    }
+
+    unsigned int size = vertices.size() * sizeof(float);
+
+    if (!mesh)
+        mesh = std::make_unique<Mesh>(vertices.data(), size);
+    else
+        mesh->update(vertices.data(), size);
+}
+
+void Chunk::draw() {
+    if (mesh)
+        mesh->draw();
+}

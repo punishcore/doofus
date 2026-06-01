@@ -10,6 +10,9 @@ public:
     static bool s;
     static bool d;
 
+    static bool left_click;
+    static bool right_click;
+    
     static bool space;
 
     static bool escape;
