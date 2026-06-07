@@ -1,5 +1,6 @@
 #include "SDLWindow.h"
 #include "../../platform/input/Input.h"
+#include "../../core/Setting.h"
 
 #include <glad/gl.h>
 
@@ -83,7 +84,16 @@ bool SDLWindow::init(
     );
 
     // VSYNC
-    SDL_GL_SetSwapInterval(1);
+    SDL_GL_SetSwapInterval(
+    Setting::vsync ? 1 : 0
+);
+int interval = 0;
+SDL_GL_GetSwapInterval(&interval);
+
+std::cout
+    << "Swap Interval = "
+    << interval
+    << std::endl;
 
     return true;
 }

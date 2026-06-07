@@ -1,12 +1,14 @@
 #pragma once
 
 #include "../block/BlockType.h"
+#include <string>
 
-class Biome {
+class Biome
+{
 public:
     virtual ~Biome() = default;
 
-    virtual int getBaseHeight(int worldX, int worldZ) = 0;
+    virtual const char* getName() = 0;
 
     virtual BlockType getTopBlock() = 0;
     virtual BlockType getMiddleBlock() = 0;

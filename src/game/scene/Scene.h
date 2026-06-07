@@ -32,8 +32,8 @@ private:
     Crosshair        crosshair;
     DebugOverlay     debugOverlay;
 
-    std::unique_ptr<Shader>       shader;       // block shader
-    std::unique_ptr<Shader>       uiShader;     // shared UI shader
+    std::unique_ptr<Shader>       shader;
+    std::unique_ptr<Shader>       uiShader;
     std::unique_ptr<TextureArray> atlas;
     std::unique_ptr<Model>        playerModel;
 

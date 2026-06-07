@@ -61,7 +61,7 @@ add_executable(doofus
     # src/world/noise/PerlinNoise.cpp
     # src/world/noise/CellularNoise.cpp
     src/world/noise/FBMNoise.cpp
-    # src/world/noise/RidgeNoise.cpp
+    src/world/noise/RidgeNoise.cpp
     # src/world/noise/ValueNoise.cpp
     src/world/TerrainGenerator.cpp
     src/world/mesher/GreedyMesher.cpp
@@ -70,6 +70,9 @@ add_executable(doofus
     src/world/biome/BiomeManager.cpp
     src/world/biome/plain/PlainBiome.cpp
     src/world/biome/desert/DesertBiome.cpp
+    src/world/biome/mountain/MountainBiome.cpp
+    src/world/terrain/TerrainSampler.cpp
+    src/world/climate/ClimateSampler.cpp
 
     # glad
     external/glad/src/gl.c

@@ -60,6 +60,8 @@ src/
 └── world/
     ├── biome/                    # BiomeManager, PlainBiome, DesertBiome
     ├── block/                    # BlockType, BlockData
+    ├── terrain/                  # Terrain sampler/sample (continentalness, peaks, erosion, river)
+    ├── climate/                  # Climate sampler/samplpe (humidity, temprature) 
     ├── mesher/                   # GreedyMesher
     ├── noise/                    # Perlin, FBM, Value, Ridge, Cellular noise
     ├── Chunk.*                   # 16×64×16 chunk storage

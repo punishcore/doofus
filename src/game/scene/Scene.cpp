@@ -5,6 +5,9 @@
 #include "../../platform/input/Input.h"
 #include "../../renderer/opengl/TextureArray.h"
 #include "../../renderer/ui/Crosshair.h"
+#include "../../world/biome/BiomeManager.h"
+#include "../../world/climate/ClimateSampler.h"
+#include "../../world/terrain/TerrainSampler.h"
 #include <glad/gl.h>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -14,14 +17,11 @@ void Scene::init() {
 
   sky.Init();
 
-  uiShader = std::make_unique<Shader>(
-        "assets/shaders/ui.vert",
-        "assets/shaders/ui.frag"
-    );
+  uiShader = std::make_unique<Shader>("assets/shaders/ui.vert",
+                                      "assets/shaders/ui.frag");
 
-    crosshair.init(uiShader.get());
-    debugOverlay.init(uiShader.get());
-
+  crosshair.init(uiShader.get());
+  debugOverlay.init(uiShader.get());
 
   shader = std::make_unique<Shader>("assets/shaders/block.vert",
                                     "assets/shaders/block.frag");
@@ -197,18 +197,14 @@ void Scene::render() {
   atlas->bind(0);
 
   shader->setInt("atlas", 0);
-  
+  glEnable(GL_CULL_FACE);
+
   glEnable(GL_DEPTH_TEST);
 
-  glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
 
-  world.draw(
-    playerTransform.position.x,
-    playerTransform.position.z,
-    frustum
-);
+  world.draw(playerTransform.position.x, playerTransform.position.z, frustum);
 
   /*
       PLAYER MODEL
@@ -234,18 +230,18 @@ void Scene::render() {
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
 
-  int groundY = world.getHeight(
-        (int)playerTransform.position.x,
-        (int)playerTransform.position.z
-    );
+  int groundY = world.getHeight((int)playerTransform.position.x,
+                                (int)playerTransform.position.z);
 
-    debugOverlay.render(
-        Setting::windowWidth,
-        Setting::windowHeight,
-        fps,
-        playerTransform.position,
-        camera.front,
-        groundY,
-        playerController.debugVisible
-    );
+  TerrainSample terrain = TerrainSampler::sample(
+      (int)playerTransform.position.x, (int)playerTransform.position.z);
+
+  ClimateSample climate = ClimateSampler::sample(
+      (int)playerTransform.position.x, (int)playerTransform.position.z);
+
+  Biome *biome = BiomeManager::getBiome(terrain, climate);
+
+  debugOverlay.render(Setting::windowWidth, Setting::windowHeight, fps,
+                      playerTransform.position, camera.front, groundY,
+                      biome->getName(), playerController.debugVisible);
 }

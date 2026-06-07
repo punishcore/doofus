@@ -1,12 +1,13 @@
 #pragma once
+
 #include "../Biome.h"
 
-class DesertBiome : public Biome {
+class MountainBiome : public Biome {
 public:
 
 const char* getName() override
 {
-    return "Desert";
+    return "Mountain";
 }
 
     BlockType getTopBlock() override;

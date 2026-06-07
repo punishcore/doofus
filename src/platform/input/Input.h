@@ -5,8 +5,8 @@ class Input
 {
 public:
     static bool w, a, s, d;
-    static bool b;          // <-- aktifkan
-    static bool bPressed;   // <-- aktifkan
+    static bool b;   
+    static bool bPressed;
 
     static bool left_click;
     static bool right_click;

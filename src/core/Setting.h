@@ -15,16 +15,17 @@ public:
   static inline int windowHeight = 720;
 
   static inline bool fullscreen = false;
-  static inline bool vsync = true;
+  static inline bool vsync = false;
 
   // ======================
   // FONT
   // ======================
 
   static inline std::string fontPath =
-      "assets/fonts/JetBrains_Mono,Space_Grotesk/JetBrains_Mono/static/JetBrainsMono-Regular.ttf";
+      "assets/fonts/JetBrains_Mono,Space_Grotesk/JetBrains_Mono/static/"
+      "JetBrainsMono-Regular.ttf";
 
-  static inline int fontSize = 5;
+  static inline int fontSize = 20;
 
   // ======================
   // CAMERA
@@ -50,7 +51,7 @@ public:
   // WORLD
   // ======================
 
-  static inline int renderDistance = 8;
+  static inline int renderDistance = 30;
 
   /*
       WORLD HEIGHT
@@ -62,7 +63,7 @@ public:
       SEED
   */
 
-  static inline int seed = 1111;
+  static inline int seed = 1234;
 
   /*
       BIOME
@@ -90,20 +91,65 @@ public:
 
   static inline int mountainHeight = 40;
 
-  /*
-      CAVES
-  */
+  // ======================
+  // CLIMATE
+  // ======================
+
+  static inline float temperatureScale = 0.0005f;
+  static inline float humidityScale = 0.0005f;
+
+  // ======================
+  // BIOME RULES
+  // ======================
+
+  static inline float mountainThreshold = 0.75f;
+
+  static inline float desertTemperature = 0.70f;
+  static inline float desertHumidity = 0.35f;
+
+  // ======================
+  // CONTINENTALNESS
+  // ======================
+
+  static inline float continentalScale = 0.0005f;
+  static inline int continentalHeight = 20;
+
+  // ======================
+  // PEAKS & VALLEYS
+  // ======================
+
+  static inline float peaksScale = 0.002f;
+  static inline int peakHeight = 60;
+
+  // ======================
+  // EROSION
+  // ======================
+
+  static inline float erosionScale = 0.003f;
+  static inline int erosionStrength = 20;
+
+  // ======================
+  // RIVERS
+  // ======================
+
+  static inline float riverScale = 0.0015f;
+  static inline float riverThreshold = 0.03f;
+  static inline int riverDepth = 8;
+
+  // ======================
+  // CAVES
+  // ======================
 
   static inline float caveScale = 0.045f;
-
   static inline float caveThreshold = 0.72f;
+  static inline int caveMinY = 5;
+  static inline int caveMaxY = 90;
 
-  /*
-      PILLARS
-  */
+  // ======================
+  // PILLARS
+  // ======================
 
   static inline float pillarScale = 0.025f;
-
   static inline float pillarThreshold = 1.15f;
 
   // ======================
@@ -117,7 +163,7 @@ public:
   // PLAYER
   // ======================
 
-  static inline float moveSpeed = 100.0f;
+  static inline float moveSpeed = 150.0f;
 
   static inline float jumpForce = 50.0f;
 

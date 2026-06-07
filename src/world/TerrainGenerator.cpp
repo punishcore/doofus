@@ -1,7 +1,9 @@
 #include "TerrainGenerator.h"
 
 #include "biome/BiomeManager.h"
+#include "climate/ClimateSampler.h"
 #include "noise/FBMNoise.h"
+#include "terrain/TerrainSampler.h"
 
 #include "../core/Setting.h"
 
@@ -40,60 +42,57 @@ void TerrainGenerator::generate(Chunk &chunk) {
 }
 
 void TerrainGenerator::generateBaseTerrain(Chunk &chunk) {
-
   for (int x = 0; x < Chunk::SIZE; x++) {
-
     for (int z = 0; z < Chunk::SIZE; z++) {
-
       int worldX = chunk.chunkX * Chunk::SIZE + x;
 
       int worldZ = chunk.chunkZ * Chunk::SIZE + z;
 
-      /*
-          BIOME
-      */
+      TerrainSample terrain = TerrainSampler::sample(worldX, worldZ);
 
-      Biome *biome = BiomeManager::getBiome(worldX, worldZ);
+      int height = Setting::baseTerrainHeight;
 
       /*
-          MAIN TERRAIN
+          CONTINENTALNESS
       */
 
-      float terrain =
-          FBMNoise::generate(worldX, worldZ, 5, 0.5f, 0.008f, Setting::seed);
-
-      int height =
-          biome->getBaseHeight(worldX, worldZ) + (int)(terrain * 12.0f);
+      height += terrain.continentalness * Setting::continentalHeight;
 
       /*
-          BIG MOUNTAINS
+          PEAKS
       */
 
-      float mountain =
-          FBMNoise::generate(worldX, worldZ, 5, 0.5f, 0.008f, Setting::seed);
+      height += (int)(terrain.peaks * Setting::peakHeight);
 
-      mountain = std::pow(std::abs(mountain), 3.5f);
+      /*
+          EROSION
+      */
 
-      height += (int)(mountain * 50.0f);
+      height -= (int)(terrain.erosion * Setting::erosionStrength);
+
+      /*
+          RIVERS
+      */
+
+      if (terrain.river < Setting::riverThreshold) {
+        height -= Setting::riverDepth;
+      }
 
       /*
           CLAMP
       */
 
-      if (height < 1)
+      if (height < 1) {
         height = 1;
+      }
 
-      if (height >= Chunk::HEIGHT)
+      if (height >= Chunk::HEIGHT) {
         height = Chunk::HEIGHT - 1;
+      }
 
       chunk.heightMap[x][z] = height;
 
-      /*
-          STONE BASE
-      */
-
       for (int y = 0; y <= height; y++) {
-
         chunk.blocks[x][y][z] = BlockType::Stone;
       }
     }
@@ -110,7 +109,11 @@ void TerrainGenerator::generateSurface(Chunk &chunk) {
 
       int worldZ = chunk.chunkZ * Chunk::SIZE + z;
 
-      Biome *biome = BiomeManager::getBiome(worldX, worldZ);
+      TerrainSample terrain = TerrainSampler::sample(worldX, worldZ);
+
+      ClimateSample climate = ClimateSampler::sample(worldX, worldZ);
+
+      Biome *biome = BiomeManager::getBiome(terrain, climate);
 
       int layerDepth = 0;
 

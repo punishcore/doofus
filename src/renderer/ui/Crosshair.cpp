@@ -37,7 +37,7 @@ void Crosshair::render(int screenWidth, int screenHeight)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     shader->use();
-    shader->setInt("mode", 0);   // mode texture
+    shader->setInt("mode", 0);
     shader->setInt("tex", 0);
     texture->bind(0);
     glUniform2f(glGetUniformLocation(shader->id, "screenSize"),

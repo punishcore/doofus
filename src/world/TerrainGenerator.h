@@ -18,4 +18,5 @@ private:
   static void generateSurface(Chunk &chunk);
 
   static void generateCaves(Chunk &chunk);
+  
 };

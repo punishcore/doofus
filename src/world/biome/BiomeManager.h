@@ -1,9 +1,15 @@
 #pragma once
 
 #include "Biome.h"
-#include <array>
 
-class BiomeManager {
+#include "../terrain/TerrainSample.h"
+#include "../climate/ClimateSample.h"
+
+class BiomeManager
+{
 public:
-    static Biome* getBiome(int worldX, int worldZ);
+    static Biome* getBiome(
+        const TerrainSample& terrain,
+        const ClimateSample& climate
+    );
 };

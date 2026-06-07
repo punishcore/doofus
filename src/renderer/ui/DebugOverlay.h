@@ -18,6 +18,7 @@ public:
         const glm::vec3& playerPos,
         const glm::vec3& cameraFront,
         int worldHeight,
+        const std::string& biomeName,
         bool visible
     );
 

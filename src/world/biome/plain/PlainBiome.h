@@ -1,9 +1,15 @@
 #pragma once
+
 #include "../Biome.h"
 
-class PlainBiome : public Biome {
+class PlainBiome : public Biome
+{
 public:
-    int getBaseHeight(int worldX, int worldZ) override;
+
+    const char* getName() override
+    {
+        return "Plains";
+    }
 
     BlockType getTopBlock() override;
     BlockType getMiddleBlock() override;

@@ -1,31 +1,40 @@
 #include "BiomeManager.h"
 
-#include "plain/PlainBiome.h"
-#include "desert/DesertBiome.h"
 #include "../../core/Setting.h"
-#include "../noise/FBMNoise.h"
+#include "desert/DesertBiome.h"
+#include "mountain/MountainBiome.h"
+#include "plain/PlainBiome.h"
 
-// single instances (no heap)
 static PlainBiome plain;
 static DesertBiome desert;
+static MountainBiome mountain;
 
-// optional: fast cache (per chunk column usage)
-Biome* BiomeManager::getBiome(int worldX, int worldZ) {
+Biome *BiomeManager::getBiome(const TerrainSample &terrain,
+                              const ClimateSample &climate) {
+  /*
+      MOUNTAIN
+  */
 
-    float biomeNoise =
-    FBMNoise::generate(
-        worldX,
-        worldZ,
-        2,
-        0.5f,
-        Setting::biomeScale,
-        Setting::seed
-    );
+  if (terrain.peaks > Setting::mountainThreshold) {
+    return &mountain;
+  }
 
-    // normalize
-    biomeNoise = (biomeNoise + 1.0f) * 0.5f;
+  /*
+      DESERT
+  */
 
-    return (biomeNoise < Setting::plainsChance)
-    ? static_cast<Biome*>(&plain)
-    : static_cast<Biome*>(&desert);
+  if (climate.temperature > Setting::desertTemperature &&
+      climate.humidity < Setting::desertHumidity) {
+    return &desert;
+  }
+  // if (terrain.continentalness < 0.25f)
+  // {
+  //     return &river;
+  // }
+
+  /*
+      PLAINS
+  */
+
+  return &plain;
 }
