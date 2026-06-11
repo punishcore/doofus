@@ -3,6 +3,7 @@
 #include "mesher/GreedyMesher.h"
 #include <cstring>
 #include <glm/glm.hpp>
+#include <iostream>
 
 Chunk::Chunk(int x, int z, World *worldPtr) {
   chunkX = x;
@@ -10,34 +11,34 @@ Chunk::Chunk(int x, int z, World *worldPtr) {
   world = worldPtr;
 }
 
-void Chunk::buildMesh() {
-  Chunk *neighborNX = world->getChunk(chunkX - 1, chunkZ);
+void Chunk::generateMeshData() {
+    vertices.clear();
+    pendingVertices.clear();
 
-  Chunk *neighborPX = world->getChunk(chunkX + 1, chunkZ);
+    Chunk *neighborNX = world->getChunk(chunkX - 1, chunkZ);
+    Chunk *neighborPX = world->getChunk(chunkX + 1, chunkZ);
+    Chunk *neighborNZ = world->getChunk(chunkX, chunkZ - 1);
+    Chunk *neighborPZ = world->getChunk(chunkX, chunkZ + 1);
 
-  Chunk *neighborNZ = world->getChunk(chunkX, chunkZ - 1);
+    GreedyMesher::build(*this, neighborNX, neighborPX, neighborNZ, neighborPZ);
 
-  Chunk *neighborPZ = world->getChunk(chunkX, chunkZ + 1);
-
-  GreedyMesher::build(*this, neighborNX, neighborPX, neighborNZ, neighborPZ);
-
-  empty = vertices.empty();
-
-  uploadMesh();
+    pendingVertices = std::move(vertices);
 }
 
 void Chunk::uploadMesh() {
-  if (vertices.empty()) {
-    mesh.reset();
-    return;
-  }
+    vertices = std::move(pendingVertices);
+    empty.store(vertices.empty());
 
-  unsigned int size = vertices.size() * sizeof(float);
+    if (vertices.empty()) {
+        mesh.reset();
+        return;
+    }
 
-  if (!mesh)
-    mesh = std::make_unique<Mesh>(vertices.data(), size);
-  else
-    mesh->update(vertices.data(), size);
+    unsigned int size = vertices.size() * sizeof(float);
+    if (!mesh)
+        mesh = std::make_unique<Mesh>(vertices.data(), size);
+    else
+        mesh->update(vertices.data(), size);
 }
 
 void Chunk::draw() {

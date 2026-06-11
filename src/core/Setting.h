@@ -51,7 +51,7 @@ public:
   // WORLD
   // ======================
 
-  static inline int renderDistance = 30;
+  static inline int renderDistance = 20;
 
   /*
       WORLD HEIGHT
@@ -163,7 +163,7 @@ public:
   // PLAYER
   // ======================
 
-  static inline float moveSpeed = 150.0f;
+  static inline float moveSpeed = 300.0f;
 
   static inline float jumpForce = 50.0f;
 

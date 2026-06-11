@@ -57,4 +57,4 @@ TerrainSample TerrainSampler::sample(int worldX, int worldZ) {
       worldX, worldZ, 3, 0.5f, Setting::riverScale, Setting::seed + 300));
 
   return terrain;
-}
+} 

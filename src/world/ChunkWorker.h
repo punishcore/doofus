@@ -1,7 +1,5 @@
 #pragma once
-
 #include "Chunk.h"
-
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
@@ -12,43 +10,66 @@
 class World;
 
 struct GeneratedChunk {
-  std::unique_ptr<Chunk> chunk;
+    std::unique_ptr<Chunk> chunk;
+    uint32_t generation;
 };
 
 struct ChunkRequest {
-  int x;
-  int z;
-  int priority;
+    int x, z, priority;
+    uint32_t generation;
+    bool operator<(const ChunkRequest& o) const { return priority > o.priority; }
+};
 
-  bool operator<(const ChunkRequest &other) const {
-    return priority > other.priority;
-  }
+struct MeshRequest {
+    Chunk* chunk;
+    int priority;
+    uint32_t generation;
+    int chunkX, chunkZ;
+
+    BlockType blocksMain[Chunk::SIZE][Chunk::HEIGHT][Chunk::SIZE];
+    BlockType blocksNX  [Chunk::SIZE][Chunk::HEIGHT][Chunk::SIZE];
+    BlockType blocksPX  [Chunk::SIZE][Chunk::HEIGHT][Chunk::SIZE];
+    BlockType blocksNZ  [Chunk::SIZE][Chunk::HEIGHT][Chunk::SIZE];
+    BlockType blocksPZ  [Chunk::SIZE][Chunk::HEIGHT][Chunk::SIZE];
+
+    bool operator<(const MeshRequest& o) const { return priority > o.priority; }
+};
+
+struct MeshResult {
+    Chunk* chunk;
+    std::vector<float> vertices;
+    uint32_t generation;
 };
 
 class ChunkWorker {
 public:
-  explicit ChunkWorker(World *world);
+    explicit ChunkWorker(World* world);
+    ~ChunkWorker();
 
-  ~ChunkWorker();
+    void requestChunk(int x, int z, int priority, uint32_t generation);
+    bool popFinishedChunk(GeneratedChunk& result);
 
-  void requestChunk(int chunkX, int chunkZ, int priority);
+    void enqueueMeshRequest(MeshRequest req);
+    bool popFinishedMesh(MeshResult& result);
 
-  bool popFinishedChunk(GeneratedChunk &result);
+    void clearRequests();
+    void flushFinished();
+
+    std::atomic<uint32_t> generation = 0;
+    void nextGeneration() { generation++; }
 
 private:
-  void run();
+    void run();
 
-  World *world;
+    World* world;
+    std::vector<std::thread> workers;
+    std::mutex mutex;
+    std::condition_variable cv;
+    std::atomic<bool> running = true;
 
-  std::vector<std::thread> workers;
+    std::priority_queue<ChunkRequest> requests;
+    std::priority_queue<MeshRequest> meshRequests;
 
-  std::mutex mutex;
-
-  std::condition_variable cv;
-
-  std::atomic<bool> running = true;
-
-  std::priority_queue<ChunkRequest> requests;
-
-  std::queue<GeneratedChunk> finished;
+    std::queue<GeneratedChunk> finished;
+    std::queue<MeshResult> finishedMeshes;
 };

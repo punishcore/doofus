@@ -4,7 +4,9 @@
 #include "block/BlockType.h"
 #include <glm/glm.hpp>
 
+#include <atomic>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 class World;
@@ -21,7 +23,9 @@ public:
   int chunkZ;
 
   bool dirty = false;
-  bool empty = true;
+  std::atomic<bool> empty = true;
+
+  // std::mutex meshMutex;
 
   World *world;
 
@@ -38,10 +42,13 @@ public:
   glm::vec3 getMaxBounds() const;
 
   std::vector<float> vertices;
+  std::vector<float> pendingVertices;   
+
+  bool meshReady = false;  
 
   Chunk(int x, int z, World *world);
 
-  void buildMesh();
+  void generateMeshData();
   void uploadMesh();
 
   void draw();

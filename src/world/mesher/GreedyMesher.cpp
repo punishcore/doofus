@@ -1,5 +1,6 @@
 #include "GreedyMesher.h"
 #include "../Chunk.h"
+#include <iostream>
 #include <vector>
 
 // ─────────────────────────────────────────────
@@ -70,16 +71,15 @@ static inline int getTextureLayerForFace(BlockType blockType, int faceAxis,
 //   faceAxis=1 (Y / top-bottom): rotasi UV berbeda
 // ─────────────────────────────────────────────
 static void emitQuad(std::vector<float> &vertexBuffer, float p0x, float p0y,
-                     float p0z, float p1x, float p1y, float p1z,
-                     float p2x, float p2y, float p2z,
-                     float p3x, float p3y, float p3z,
+                     float p0z, float p1x, float p1y, float p1z, float p2x,
+                     float p2y, float p2z, float p3x, float p3y, float p3z,
                      int faceAxis, bool isBackFace, int quadWidth,
-                     int quadHeight, int textureLayerId,
-                     int uvOffsetU, int uvOffsetV) {
-  float uvWidth  = (float)quadWidth;
+                     int quadHeight, int textureLayerId, int uvOffsetU,
+                     int uvOffsetV) {
+  float uvWidth = (float)quadWidth;
   float uvHeight = (float)quadHeight;
-  float u0 = uvOffsetU,            v0 = uvOffsetV;
-  float u1 = uvOffsetU + uvWidth,  v1 = uvOffsetV + uvHeight;
+  float u0 = uvOffsetU, v0 = uvOffsetV;
+  float u1 = uvOffsetU + uvWidth, v1 = uvOffsetV + uvHeight;
 
   if (faceAxis == 1) {
     if (!isBackFace) {
@@ -114,7 +114,7 @@ static void emitQuad(std::vector<float> &vertexBuffer, float p0x, float p0y,
       pushVertex(vertexBuffer, p2x, p2y, p2z, u0, v1, textureLayerId);
       pushVertex(vertexBuffer, p1x, p1y, p1z, u0, v0, textureLayerId);
     }
-} else {
+  } else {
     // East/West face (faceAxis == 0) — swap U dan V
     if (!isBackFace) {
       pushVertex(vertexBuffer, p0x, p0y, p0z, v0, u0, textureLayerId);
@@ -131,7 +131,7 @@ static void emitQuad(std::vector<float> &vertexBuffer, float p0x, float p0y,
       pushVertex(vertexBuffer, p2x, p2y, p2z, v1, u1, textureLayerId);
       pushVertex(vertexBuffer, p1x, p1y, p1z, v0, u1, textureLayerId);
     }
-}
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -155,30 +155,27 @@ void GreedyMesher::build(Chunk &chunk, Chunk *neighborNX, Chunk *neighborPX,
     if (ly < 0 || ly >= Chunk::HEIGHT)
       return BlockType::Air;
 
+    // Dalam range chunk sendiri
     if (lx >= 0 && lx < Chunk::SIZE && lz >= 0 && lz < Chunk::SIZE)
       return chunk.getBlock(lx, ly, lz);
 
-    if (lx >= 0 && lx < Chunk::SIZE && lz >= 0 && lz < Chunk::SIZE && ly >= 0 &&
-        ly < Chunk::HEIGHT)
-      return chunk.getBlock(lx, ly, lz);
-
+    // Neighbor X
     if (lx < 0)
       return neighborNX ? neighborNX->getBlock(lx + Chunk::SIZE, ly, lz)
                         : BlockType::Air;
-
     if (lx >= Chunk::SIZE)
       return neighborPX ? neighborPX->getBlock(lx - Chunk::SIZE, ly, lz)
                         : BlockType::Air;
 
+    // Neighbor Z
     if (lz < 0)
       return neighborNZ ? neighborNZ->getBlock(lx, ly, lz + Chunk::SIZE)
                         : BlockType::Air;
-
     if (lz >= Chunk::SIZE)
       return neighborPZ ? neighborPZ->getBlock(lx, ly, lz - Chunk::SIZE)
                         : BlockType::Air;
 
-    return BlockType::Air; // default fallback
+    return BlockType::Air;
   };
 
   // Face mask untuk satu slice
@@ -217,21 +214,13 @@ void GreedyMesher::build(Chunk &chunk, Chunk *neighborNX, Chunk *neighborPX,
              currentPos[uAxis]++) {
           // blockA = blok di posisi saat ini
           // blockB = blok di posisi saat ini + 1 langkah ke faceAxis
-          BlockType blockA =
-              (currentPos[faceAxis] >= 0)
-                  ? getBlockWithNeighbors(currentPos[0], currentPos[1],
-                                          currentPos[2])
-                  : BlockType::Air;
+          BlockType blockA = getBlockWithNeighbors(currentPos[0], currentPos[1],
+                                                   currentPos[2]);
 
           BlockType blockB =
-              (currentPos[faceAxis] < chunkDimensions[faceAxis] - 1)
-                  ? getBlockWithNeighbors(currentPos[0] + stepAlongAxis[0],
-                                          currentPos[1] + stepAlongAxis[1],
-                                          currentPos[2] + stepAlongAxis[2])
-                  : getBlockWithNeighbors( // ← dulu ini langsung return Air
-                        currentPos[0] + stepAlongAxis[0],
-                        currentPos[1] + stepAlongAxis[1],
-                        currentPos[2] + stepAlongAxis[2]);
+              getBlockWithNeighbors(currentPos[0] + stepAlongAxis[0],
+                                    currentPos[1] + stepAlongAxis[1],
+                                    currentPos[2] + stepAlongAxis[2]);
 
           bool isBlockASolid = (blockA != BlockType::Air);
           bool isBlockBSolid = (blockB != BlockType::Air);
@@ -250,8 +239,6 @@ void GreedyMesher::build(Chunk &chunk, Chunk *neighborNX, Chunk *neighborPX,
           }
         }
 
-      // Maju ke slice berikutnya (kompensasi dari loop for yang akan increment
-      // lagi)
       currentPos[faceAxis]++;
 
       // Helper lambda: konversi (uPos, vPos) → flat index di faceMask
@@ -337,12 +324,14 @@ void GreedyMesher::build(Chunk &chunk, Chunk *neighborNX, Chunk *neighborPX,
           corner2z += chunkOffsetZ;
           corner3z += chunkOffsetZ;
 
-          int worldU = quadOrigin[uAxis] + (uAxis == 0 ? chunk.chunkX * Chunk::SIZE
-                                              : uAxis == 2 ? chunk.chunkZ * Chunk::SIZE
-                                                           : 0);
-          int worldV = quadOrigin[vAxis] + (vAxis == 0 ? chunk.chunkX * Chunk::SIZE
-                                              : vAxis == 2 ? chunk.chunkZ * Chunk::SIZE
-                                                           : 0);
+          int worldU =
+              quadOrigin[uAxis] + (uAxis == 0   ? chunk.chunkX * Chunk::SIZE
+                                   : uAxis == 2 ? chunk.chunkZ * Chunk::SIZE
+                                                : 0);
+          int worldV =
+              quadOrigin[vAxis] + (vAxis == 0   ? chunk.chunkX * Chunk::SIZE
+                                   : vAxis == 2 ? chunk.chunkZ * Chunk::SIZE
+                                                : 0);
 
           emitQuad(chunk.vertices, corner0x, corner0y, corner0z, corner1x,
                    corner1y, corner1z, corner2x, corner2y, corner2z, corner3x,

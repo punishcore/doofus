@@ -12,6 +12,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
 
 void Scene::init() {
 
@@ -38,76 +39,35 @@ void Scene::init() {
 
   playerModel = std::make_unique<Model>("assets/models/player.obj",
                                         "assets/models/texture_player.png");
-
-  /*
-      SPAWN POSITION
-  */
-
-  int spawnX = 0;
-  int spawnZ = 0;
-
-  /*
-      FORCE GENERATE WORLD
-  */
-
-  bool generated = false;
-
-  while (!generated) {
-
-    world.update((float)spawnX, (float)spawnZ);
-
-    SDL_Delay(1);
-
-    generated = true;
-
-    /*
-        CHECK ALL CHUNKS
-    */
-
-    int centerChunkX = spawnX / Chunk::SIZE;
-
-    int centerChunkZ = spawnZ / Chunk::SIZE;
-
-    for (int x = -Setting::renderDistance; x <= Setting::renderDistance; x++) {
-
-      for (int z = -Setting::renderDistance; z <= Setting::renderDistance;
-           z++) {
-
-        Chunk *chunk = world.getChunk(centerChunkX + x, centerChunkZ + z);
-
-        if (chunk == nullptr) {
-
-          generated = false;
-
-          break;
-        }
-      }
-
-      if (!generated)
-        break;
-    }
-  }
-
-  /*
-      NOW SAFE TO GET HEIGHT
-  */
-
-  int groundY = world.getHeight(spawnX, spawnZ);
-
-  /*
-      PLAYER SPAWN
-  */
-
-  playerTransform.position = glm::vec3(spawnX, groundY + 5.0f, spawnZ);
-
   /*
       CAMERA
   */
 
   camera.position = playerTransform.position;
+  world.update(0.0f, 0.0f);
 }
 
 void Scene::update(float dt, SDL_Window *window) {
+  if (isLoading) {
+    world.update(0.0f, 0.0f);
+
+    bool allReady = true;
+    for (int x = -3; x <= 3 && allReady; x++) {
+      for (int z = -3; z <= 3 && allReady; z++) {
+        Chunk *chunk = world.getChunk(x, z);
+        if (!chunk || chunk->dirty || !chunk->mesh)
+          allReady = false;
+      }
+    }
+
+    if (allReady) {
+      int groundY = world.getHeight(0, 0);
+      playerTransform.position = glm::vec3(0, groundY + 5.0f, 0);
+      camera.position = playerTransform.position;
+      isLoading = false;
+    }
+    return;
+  }
 
   time.update(dt);
 
@@ -122,6 +82,13 @@ void Scene::update(float dt, SDL_Window *window) {
 }
 
 void Scene::render() {
+
+  if (isLoading) {
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // Optional: render loading screen text di sini
+    return;
+  }
 
   glm::vec3 top = time.getSkyTopColor();
 

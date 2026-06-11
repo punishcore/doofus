@@ -1,9 +1,9 @@
 #include "World.h"
-
 #include "../core/Setting.h"
 #include "../renderer/Frustum.h"
 
 #include <cmath>
+#include <cstring>
 #include <iostream>
 
 World::World() { worker = std::make_unique<ChunkWorker>(this); }
@@ -11,31 +11,40 @@ World::World() { worker = std::make_unique<ChunkWorker>(this); }
 World::~World() = default;
 
 long long World::getChunkKey(int x, int z) {
-  return ((long long)x << 32) ^ (unsigned int)z;
+    return ((long long)(unsigned int)x << 32) | (unsigned int)z;
 }
 
-void World::markChunkDirty(Chunk *chunk) {
-  if (!chunk)
-    return;
-
-  if (chunk->dirty)
-    return;
-
-  chunk->dirty = true;
-
-  remeshQueue.push(getChunkKey(chunk->chunkX, chunk->chunkZ));
-}
+//───────────────────────────────────────
+//  Chunk lookup
+//───────────────────────────────────────
 
 Chunk *World::getChunk(int chunkX, int chunkZ) {
   long long key = getChunkKey(chunkX, chunkZ);
-
   auto it = chunks.find(key);
-
-  if (it == chunks.end())
-    return nullptr;
-
-  return it->second.get();
+  return it != chunks.end() ? it->second.get() : nullptr;
 }
+
+std::shared_ptr<Chunk> World::getChunkShared(int chunkX, int chunkZ) {
+  std::shared_lock lock(chunksMutex);
+  long long key = getChunkKey(chunkX, chunkZ);
+  auto it = chunks.find(key);
+  return it != chunks.end() ? it->second : nullptr;
+}
+
+//───────────────────────────────────────
+//  Dirty / remesh
+//───────────────────────────────────────
+
+void World::markChunkDirty(Chunk *chunk) {
+  if (!chunk || chunk->dirty)
+    return;
+  chunk->dirty = true;
+  remeshQueue.push(getChunkKey(chunk->chunkX, chunk->chunkZ));
+}
+
+//───────────────────────────────────────
+//  Load
+//───────────────────────────────────────
 
 void World::loadChunk(int chunkX, int chunkZ, int playerChunkX,
                       int playerChunkZ) {
@@ -44,220 +53,249 @@ void World::loadChunk(int chunkX, int chunkZ, int playerChunkX,
   if (chunks.contains(key))
     return;
 
-  if (queuedChunks.contains(key))
+  auto it = queuedChunks.find(key);
+  if (it != queuedChunks.end() && it->second == worker->generation.load())
     return;
 
-  queuedChunks.insert(key);
+  queuedChunks[key] = worker->generation.load();
 
   int dx = chunkX - playerChunkX;
   int dz = chunkZ - playerChunkZ;
-
   int priority = dx * dx + dz * dz;
 
-  worker->requestChunk(chunkX, chunkZ, priority);
+  worker->requestChunk(chunkX, chunkZ, priority, worker->generation.load());
 }
+
+//───────────────────────────────────────
+//  Update
+//───────────────────────────────────────
 
 void World::update(float playerX, float playerZ) {
   int playerChunkX = (int)std::floor(playerX / Chunk::SIZE);
-
   int playerChunkZ = (int)std::floor(playerZ / Chunk::SIZE);
 
-  /*
-      REQUEST CHUNKS
-  */
+  static int lastChunkX = INT_MAX;
+  static int lastChunkZ = INT_MAX;
 
+if (playerChunkX != lastChunkX || playerChunkZ != lastChunkZ) {
+    worker->nextGeneration();
+    worker->clearRequests();
+    worker->flushFinished();
+    queuedChunks.clear();
+    remeshQueue = {};
+
+    for (auto& [key, chunk] : chunks) {
+        chunk->dirty = false;
+        markChunkDirty(chunk.get());
+    }
+
+    lastChunkX = playerChunkX;
+    lastChunkZ = playerChunkZ;
+}
+
+  // Request terrain
   for (int x = -Setting::renderDistance; x <= Setting::renderDistance; x++) {
     for (int z = -Setting::renderDistance; z <= Setting::renderDistance; z++) {
+      if (x * x + z * z > Setting::renderDistance * Setting::renderDistance)
+        continue;
       loadChunk(playerChunkX + x, playerChunkZ + z, playerChunkX, playerChunkZ);
     }
   }
 
-  /*
-      RECEIVE GENERATED CHUNKS
-  */
-
+  // Accepting terrain from worker
   GeneratedChunk result;
-
   while (worker->popFinishedChunk(result)) {
-    auto chunk = std::move(result.chunk);
+    if (result.generation != worker->generation.load())
+      continue;
 
-    long long key = getChunkKey(chunk->chunkX, chunk->chunkZ);
+    int cx = result.chunk->chunkX;
+    int cz = result.chunk->chunkZ;
+    long long key = getChunkKey(cx, cz);
 
-    int cx = chunk->chunkX;
-    int cz = chunk->chunkZ;
-
-    chunks[key] = std::move(chunk);
-
+    chunks[key] = std::move(result.chunk);
     queuedChunks.erase(key);
 
-    getChunk(cx, cz)->dirty = false;
+    for (auto [ncx, ncz] : std::initializer_list<std::pair<int, int>>{
+             {cx, cz},
+             {cx - 1, cz},
+             {cx + 1, cz},
+             {cx, cz - 1},
+             {cx, cz + 1},
+         }) {
+      Chunk *n = getChunk(ncx, ncz);
+      if (!n)
+        continue;
+      n->dirty = false;
+      markChunkDirty(n);
+    }
+  }
 
-    Chunk *c = getChunk(cx, cz);
+  // Send mesh request to worker (using priority)
+  const int MAX_MESH_DISPATCH = 4;
+int dispatched = 0;
 
-    markChunkDirty(getChunk(cx, cz));
+while (!remeshQueue.empty() && dispatched < MAX_MESH_DISPATCH) {
+    long long key = remeshQueue.front();
+    remeshQueue.pop();
 
-    markChunkDirty(getChunk(cx - 1, cz));
+    auto it = chunks.find(key);
+    if (it == chunks.end()) continue;
+    Chunk* chunk = it->second.get();
+    if (!chunk->dirty) continue;
 
-    markChunkDirty(getChunk(cx + 1, cz));
+    int dx = std::abs(chunk->chunkX - playerChunkX);
+    int dz = std::abs(chunk->chunkZ - playerChunkZ);
+    if (dx > Setting::renderDistance || dz > Setting::renderDistance) {
+        chunk->dirty = false;
+        continue;
+    }
 
-    markChunkDirty(getChunk(cx, cz - 1));
+    Chunk* nNX = getChunk(chunk->chunkX - 1, chunk->chunkZ);
+    Chunk* nPX = getChunk(chunk->chunkX + 1, chunk->chunkZ);
+    Chunk* nNZ = getChunk(chunk->chunkX,     chunk->chunkZ - 1);
+    Chunk* nPZ = getChunk(chunk->chunkX,     chunk->chunkZ + 1);
 
-    markChunkDirty(getChunk(cx, cz + 1));
+    if (!nNX || !nPX || !nNZ || !nPZ) {
+        chunk->dirty = false;
+        continue;
+    }
+
+    MeshRequest meshReq;
+    meshReq.chunk      = chunk;
+    meshReq.priority   = dx * dx + dz * dz;
+    meshReq.generation = worker->generation.load();
+    meshReq.chunkX     = chunk->chunkX;
+    meshReq.chunkZ     = chunk->chunkZ;
+
+    memcpy(meshReq.blocksMain, chunk->blocks, sizeof(meshReq.blocksMain));
+    memcpy(meshReq.blocksNX,   nNX->blocks,   sizeof(meshReq.blocksNX));
+    memcpy(meshReq.blocksPX,   nPX->blocks,   sizeof(meshReq.blocksPX));
+    memcpy(meshReq.blocksNZ,   nNZ->blocks,   sizeof(meshReq.blocksNZ));
+    memcpy(meshReq.blocksPZ,   nPZ->blocks,   sizeof(meshReq.blocksPZ));
+
+    worker->enqueueMeshRequest(std::move(meshReq));
+    dispatched++;
+}
+
+  // Accept result mesh from worker, upload on main thread
+  MeshResult meshResult;
+  while (worker->popFinishedMesh(meshResult)) {
+    if (meshResult.generation != worker->generation.load())
+      continue;
+
+    Chunk *chunk = meshResult.chunk;
+    chunk->pendingVertices = std::move(meshResult.vertices);
+    chunk->empty.store(chunk->pendingVertices.empty());
+    chunk->uploadMesh();
+    chunk->dirty = false;
   }
 
   unloadFarChunks(playerChunkX, playerChunkZ);
-
-  const int MAX_REMESH_PER_FRAME = 2;
-
-  for (int i = 0; i < MAX_REMESH_PER_FRAME && !remeshQueue.empty(); i++) {
-    long long key = remeshQueue.front();
-
-    remeshQueue.pop();
-
-    Chunk *chunk = nullptr;
-
-    auto it = chunks.find(key);
-
-    if (it != chunks.end()) {
-      chunk = it->second.get();
-    }
-
-    if (!chunk)
-      continue;
-
-    chunk->buildMesh();
-
-    chunk->dirty = false;
-  }
 }
+
+//───────────────────────────────────────
+//  Draw
+//───────────────────────────────────────
 
 void World::draw(float playerX, float playerZ, const Frustum &frustum) {
   int playerChunkX = (int)std::floor(playerX / Chunk::SIZE);
-
   int playerChunkZ = (int)std::floor(playerZ / Chunk::SIZE);
 
   for (auto &[key, chunk] : chunks) {
     int dx = std::abs(chunk->chunkX - playerChunkX);
-
     int dz = std::abs(chunk->chunkZ - playerChunkZ);
 
-    if (dx > Setting::renderDistance || dz > Setting::renderDistance) {
+    if (dx > Setting::renderDistance || dz > Setting::renderDistance)
       continue;
-    }
-
     if (chunk->empty)
       continue;
-
-    if (!frustum.isBoxVisible(chunk->getMinBounds(), chunk->getMaxBounds())) {
+    if (!chunk->mesh) {
       continue;
     }
+    if (!frustum.isBoxVisible(chunk->getMinBounds(), chunk->getMaxBounds()))
+      continue;
 
     chunk->draw();
   }
 }
 
+//───────────────────────────────────────
+//  Block ops
+//───────────────────────────────────────
+
 bool World::isSolid(int x, int y, int z) {
-  int chunkX = std::floor((float)x / Chunk::SIZE);
-
-  int chunkZ = std::floor((float)z / Chunk::SIZE);
-
-  Chunk *chunk = getChunk(chunkX, chunkZ);
-
+  Chunk *chunk = getChunk((int)std::floor((float)x / Chunk::SIZE),
+                          (int)std::floor((float)z / Chunk::SIZE));
   if (!chunk)
     return false;
 
-  int localX = x % Chunk::SIZE;
+  int lx = x % Chunk::SIZE;
+  if (lx < 0)
+    lx += Chunk::SIZE;
+  int lz = z % Chunk::SIZE;
+  if (lz < 0)
+    lz += Chunk::SIZE;
 
-  int localZ = z % Chunk::SIZE;
-
-  if (localX < 0)
-    localX += Chunk::SIZE;
-
-  if (localZ < 0)
-    localZ += Chunk::SIZE;
-
-  if (y < 0 || y >= Chunk::HEIGHT) {
+  if (y < 0 || y >= Chunk::HEIGHT)
     return false;
-  }
-
-  return chunk->blocks[localX][y][localZ] != BlockType::Air;
+  return chunk->blocks[lx][y][lz] != BlockType::Air;
 }
 
 int World::getHeight(int x, int z) {
-  for (int y = Chunk::HEIGHT - 1; y >= 0; y--) {
-    if (isSolid(x, y, z)) {
+  for (int y = Chunk::HEIGHT - 1; y >= 0; y--)
+    if (isSolid(x, y, z))
       return y;
-    }
-  }
-
   return 0;
 }
 
 void World::setBlock(int x, int y, int z, BlockType type) {
-  int chunkX = std::floor((float)x / Chunk::SIZE);
-
-  int chunkZ = std::floor((float)z / Chunk::SIZE);
-
+  int chunkX = (int)std::floor((float)x / Chunk::SIZE);
+  int chunkZ = (int)std::floor((float)z / Chunk::SIZE);
   Chunk *chunk = getChunk(chunkX, chunkZ);
-
   if (!chunk)
     return;
 
-  int localX = x % Chunk::SIZE;
-
-  int localZ = z % Chunk::SIZE;
-
-  if (localX < 0)
-    localX += Chunk::SIZE;
-
-  if (localZ < 0)
-    localZ += Chunk::SIZE;
-
-  if (y < 0 || y >= Chunk::HEIGHT) {
+  int lx = x % Chunk::SIZE;
+  if (lx < 0)
+    lx += Chunk::SIZE;
+  int lz = z % Chunk::SIZE;
+  if (lz < 0)
+    lz += Chunk::SIZE;
+  if (y < 0 || y >= Chunk::HEIGHT)
     return;
-  }
 
-  chunk->blocks[localX][y][localZ] = type;
-
+  chunk->blocks[lx][y][lz] = type;
   markChunkDirty(chunk);
 
-  if (localX == 0) {
-    if (auto *n = getChunk(chunkX - 1, chunkZ)) {
+  if (lx == 0)
+    if (auto *n = getChunk(chunkX - 1, chunkZ))
       markChunkDirty(n);
-    }
-  }
-
-  if (localX == Chunk::SIZE - 1) {
-    if (auto *n = getChunk(chunkX + 1, chunkZ)) {
+  if (lx == Chunk::SIZE - 1)
+    if (auto *n = getChunk(chunkX + 1, chunkZ))
       markChunkDirty(n);
-    }
-  }
-
-  if (localZ == 0) {
-    if (auto *n = getChunk(chunkX, chunkZ - 1)) {
+  if (lz == 0)
+    if (auto *n = getChunk(chunkX, chunkZ - 1))
       markChunkDirty(n);
-    }
-  }
-
-  if (localZ == Chunk::SIZE - 1) {
-    if (auto *n = getChunk(chunkX, chunkZ + 1)) {
+  if (lz == Chunk::SIZE - 1)
+    if (auto *n = getChunk(chunkX, chunkZ + 1))
       markChunkDirty(n);
-    }
-  }
 }
 
+//───────────────────────────────────────
+//  Unload
+//───────────────────────────────────────
+
 void World::unloadFarChunks(int centerChunkX, int centerChunkZ) {
+  const int UNLOAD_DISTANCE = Setting::renderDistance + 2;
+
   for (auto it = chunks.begin(); it != chunks.end();) {
     Chunk *chunk = it->second.get();
-
     int dx = std::abs(chunk->chunkX - centerChunkX);
-
     int dz = std::abs(chunk->chunkZ - centerChunkZ);
 
-    if (dx > Setting::renderDistance || dz > Setting::renderDistance) {
+    if (dx > UNLOAD_DISTANCE || dz > UNLOAD_DISTANCE)
       it = chunks.erase(it);
-    } else {
+    else
       ++it;
-    }
   }
 }

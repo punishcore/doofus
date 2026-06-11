@@ -38,7 +38,6 @@ void TerrainGenerator::generate(Chunk &chunk) {
 
   generateCaves(chunk);
 
-  chunk.dirty = true;
 }
 
 void TerrainGenerator::generateBaseTerrain(Chunk &chunk) {
