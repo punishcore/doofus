@@ -144,10 +144,9 @@ static void emitQuad(std::vector<float> &vertexBuffer, float p0x, float p0y,
 // 4. Scan mask, merge face yang sama jadi quad besar
 // 5. Emit quad ke vertex buffer
 // ─────────────────────────────────────────────
-void GreedyMesher::build(Chunk &chunk, Chunk *neighborNX, Chunk *neighborPX,
-                         Chunk *neighborNZ, Chunk *neighborPZ) {
-  chunk.vertices.clear();
-  chunk.empty = true;
+void GreedyMesher::build(const Chunk &chunk, Chunk *neighborNX, Chunk *neighborPX,
+                         Chunk *neighborNZ, Chunk *neighborPZ, std::vector<float> &outVertices) {
+  outVertices.clear();
 
   // ── Helper query blok lintas chunk ──
   // Didefinisikan DI SINI, sebelum semua loop
@@ -325,29 +324,31 @@ void GreedyMesher::build(Chunk &chunk, Chunk *neighborNX, Chunk *neighborPX,
           corner3z += chunkOffsetZ;
 
           int worldU =
-              quadOrigin[uAxis] + (uAxis == 0   ? chunk.chunkX * Chunk::SIZE
-                                   : uAxis == 2 ? chunk.chunkZ * Chunk::SIZE
-                                                : 0);
+              quadOrigin[uAxis] +
+              (uAxis == 0 ? chunk.chunkX * Chunk::SIZE
+                          : (uAxis == 2 ? chunk.chunkZ * Chunk::SIZE : 0));
           int worldV =
-              quadOrigin[vAxis] + (vAxis == 0   ? chunk.chunkX * Chunk::SIZE
-                                   : vAxis == 2 ? chunk.chunkZ * Chunk::SIZE
-                                                : 0);
+              quadOrigin[vAxis] +
+              (vAxis == 0 ? chunk.chunkX * Chunk::SIZE
+                          : (vAxis == 2 ? chunk.chunkZ * Chunk::SIZE : 0));
 
-          emitQuad(chunk.vertices, corner0x, corner0y, corner0z, corner1x,
+          // 2. Kirim data ke outVertices lokal worker thread
+          emitQuad(outVertices, corner0x, corner0y, corner0z, corner1x,
                    corner1y, corner1z, corner2x, corner2y, corner2z, corner3x,
                    corner3y, corner3z, faceAxis, currentCell.isBackFace,
                    mergedWidth, mergedHeight, currentCell.textureLayerId,
                    worldU, worldV);
 
-          chunk.empty = false;
+          // 3. KUNCI GREEDY MESHING: Kosongkan cell mask yang sudah di-merge
+          // agar tidak diproses ulang di iterasi koordinat uPos berikutnya
+          for (int v = 0; v < mergedHeight; v++) {
+            for (int u = 0; u < mergedWidth; u++) {
+              faceMask[getMaskIndex(uPos + u, vPos + v)] = {BlockType::Air,
+                                                            false, -1};
+            }
+          }
 
-          // Hapus cell yang sudah di-merge dari mask
-          // supaya tidak di-proses lagi di iterasi berikutnya
-          for (int row = 0; row < mergedHeight; row++)
-            for (int col = 0; col < mergedWidth; col++)
-              faceMask[getMaskIndex(uPos + col, vPos + row)] = {BlockType::Air,
-                                                                false, -1};
-
+          // Lompati uPos sebanyak width yang berhasil digabung
           uPos += mergedWidth;
         }
 

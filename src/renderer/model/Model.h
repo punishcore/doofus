@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../opengl/Mesh.h"
+#include "../opengl/ModelMesh.h"
 #include "../opengl/Texture.h"
 
 #include <memory>
@@ -10,7 +10,7 @@ class Shader;
 class Model {
 public:
 
-    std::unique_ptr<Mesh> mesh;
+    std::unique_ptr<ModelMesh> mesh;
     std::unique_ptr<Texture> texture;
 
     Model(

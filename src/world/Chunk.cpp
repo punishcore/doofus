@@ -20,7 +20,7 @@ void Chunk::generateMeshData() {
     Chunk *neighborNZ = world->getChunk(chunkX, chunkZ - 1);
     Chunk *neighborPZ = world->getChunk(chunkX, chunkZ + 1);
 
-    GreedyMesher::build(*this, neighborNX, neighborPX, neighborNZ, neighborPZ);
+    GreedyMesher::build(*this, neighborNX, neighborPX, neighborNZ, neighborPZ, vertices);
 
     pendingVertices = std::move(vertices);
 }

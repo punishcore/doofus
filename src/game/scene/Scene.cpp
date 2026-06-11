@@ -37,6 +37,12 @@ void Scene::init() {
       },
       16, true);
 
+  playerShader =
+    std::make_unique<Shader>(
+        "assets/shaders/model.vert",
+        "assets/shaders/model.frag"
+    );
+
   playerModel = std::make_unique<Model>("assets/models/player.obj",
                                         "assets/models/texture_player.png");
   /*
@@ -177,13 +183,45 @@ void Scene::render() {
       PLAYER MODEL
   */
 
-  glm::mat4 playerMatrix =
-      glm::translate(glm::mat4(1.0f), playerTransform.position);
+ glm::mat4 playerMatrix =
+    glm::translate(
+        glm::mat4(1.0f),
+        playerTransform.position
+    );
 
-  glUniformMatrix4fv(glGetUniformLocation(shader->id, "model"), 1, GL_FALSE,
-                     glm::value_ptr(playerMatrix));
+playerShader->use();
 
-  playerModel->draw(*shader);
+glUniformMatrix4fv(
+    glGetUniformLocation(
+        playerShader->id,
+        "model"
+    ),
+    1,
+    GL_FALSE,
+    glm::value_ptr(playerMatrix)
+);
+
+glUniformMatrix4fv(
+    glGetUniformLocation(
+        playerShader->id,
+        "view"
+    ),
+    1,
+    GL_FALSE,
+    glm::value_ptr(view)
+);
+
+glUniformMatrix4fv(
+    glGetUniformLocation(
+        playerShader->id,
+        "projection"
+    ),
+    1,
+    GL_FALSE,
+    glm::value_ptr(projection)
+);
+
+playerModel->draw(*playerShader);
 
   /*
       CROSSHAIR

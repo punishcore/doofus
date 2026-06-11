@@ -51,7 +51,7 @@ public:
   // WORLD
   // ======================
 
-  static inline int renderDistance = 20;
+  static inline int renderDistance = 30;
 
   /*
       WORLD HEIGHT

@@ -11,7 +11,7 @@ Model::Model(
 
     auto vertices = OBJLoader::load(objPath);
 
-    mesh = std::make_unique<Mesh>(
+    mesh = std::make_unique<ModelMesh>(
         vertices.data(),
         vertices.size() * sizeof(float)
     );

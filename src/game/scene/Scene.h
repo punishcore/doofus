@@ -37,6 +37,7 @@ private:
   std::unique_ptr<Shader> uiShader;
   std::unique_ptr<TextureArray> atlas;
   std::unique_ptr<Model> playerModel;
+  std::unique_ptr<Shader> playerShader;
 
   PlayerController playerController;
   TransformComponent playerTransform;

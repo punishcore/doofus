@@ -44,6 +44,7 @@ add_executable(doofus
     # renderer
     src/renderer/opengl/Shader.cpp
     src/renderer/opengl/Mesh.cpp
+    src/renderer/opengl/ModelMesh.cpp
     src/renderer/opengl/TextureArray.cpp
     src/renderer/opengl/Texture.cpp
     src/renderer/Sky.cpp

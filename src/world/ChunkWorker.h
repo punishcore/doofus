@@ -24,15 +24,14 @@ struct MeshRequest {
     Chunk* chunk;
     int priority;
     uint32_t generation;
-    int chunkX, chunkZ;
+    
+    std::shared_ptr<Chunk> mainChunk;
+    std::shared_ptr<Chunk> nNX;
+    std::shared_ptr<Chunk> nPX;
+    std::shared_ptr<Chunk> nNZ;
+    std::shared_ptr<Chunk> nPZ;
 
-    BlockType blocksMain[Chunk::SIZE][Chunk::HEIGHT][Chunk::SIZE];
-    BlockType blocksNX  [Chunk::SIZE][Chunk::HEIGHT][Chunk::SIZE];
-    BlockType blocksPX  [Chunk::SIZE][Chunk::HEIGHT][Chunk::SIZE];
-    BlockType blocksNZ  [Chunk::SIZE][Chunk::HEIGHT][Chunk::SIZE];
-    BlockType blocksPZ  [Chunk::SIZE][Chunk::HEIGHT][Chunk::SIZE];
-
-    bool operator<(const MeshRequest& o) const { return priority > o.priority; }
+    bool operator<(const MeshRequest& o) const { return priority > o.priority; } 
 };
 
 struct MeshResult {
